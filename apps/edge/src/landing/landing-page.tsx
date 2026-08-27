@@ -32,9 +32,9 @@ function reasons(sampleMcpId: string) {
   return [
     {
       accent: "text-signal-red",
-      body: "Point your client at the URL. That is the whole onboarding.",
+      body: "Point your client at the URL and start calling.",
       number: "01",
-      title: "No account, no API key, no rate-limit email",
+      title: "Nothing to set up",
     },
     {
       accent: "text-royal-violet",
@@ -44,7 +44,7 @@ function reasons(sampleMcpId: string) {
     },
     {
       accent: "text-antique-gold",
-      body: "Both transports invoke the same validated operation. Schemas cannot drift.",
+      body: "Both transports call the same operation, so the schemas always match.",
       number: "03",
       title: "MCP and plain JSON, from one definition",
     },
@@ -68,14 +68,6 @@ const GUARANTEES = [
     body: "Malformed input is rejected before it reaches the tool body.",
     title: "Validated schemas, rejected at the edge",
   },
-] as const;
-
-const SOURCE_FACTS = [
-  "Apache-2.0",
-  "Cloudflare Worker",
-  "No database, no Durable Object",
-  "Worker-runtime tests",
-  "A changeset on every PR",
 ] as const;
 
 /** Cards strewn across the felt behind the hero, anchored to the viewport edges. */
@@ -193,7 +185,7 @@ function Why({ sampleMcpId }: { readonly sampleMcpId: string }): ReactNode {
         <div className="flex w-[420px] shrink-0 flex-col gap-6 max-[900px]:w-full">
           <p className={EYEBROW_ON_CARD}>Why</p>
           <h2 className="font-display font-extrabold text-display-sm text-felt">
-            Most MCP servers ask for a key first. Stamppot asks for nothing.
+            Dutch open data, one URL away.
           </h2>
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
@@ -410,16 +402,6 @@ function OpenSource(): ReactNode {
           Apache-2.0, on one Cloudflare Worker. Every operation, schema and
           content file lives in the open.
         </p>
-        <ul className="mt-12 flex max-w-[780px] list-none flex-wrap justify-center gap-3 p-0">
-          {SOURCE_FACTS.map((fact) => (
-            <li
-              className="flex h-12 items-center rounded-pill px-[26px] font-display font-extrabold text-[14px] text-felt leading-[20px] shadow-[inset_0_0_0_2px_var(--color-felt)]"
-              key={fact}
-            >
-              {fact}
-            </li>
-          ))}
-        </ul>
         <div className="mt-12 flex items-center gap-4 max-sm:flex-col max-sm:gap-3">
           <a
             className={`${PILL} ${PILL_LABEL} bg-felt text-card no-underline`}
