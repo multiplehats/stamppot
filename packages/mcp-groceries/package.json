@@ -1,0 +1,15 @@
+{
+  "name": "@stamppot/mcp-groceries",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog-build": "./src/catalog-build.ts",
+    "./cloudflare": "./src/cloudflare.ts"
+  },
+  "dependencies": {
+    "@stamppot/core": "workspace:*",
+    "zod": "catalog:"
+  }
+}
