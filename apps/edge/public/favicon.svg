@@ -1,0 +1,11 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <title>Stamppot cooking pot</title>
+  <path d="M11 8h42v35c0 9-7 16-16 16H27c-9 0-16-7-16-16V8Z" fill="#153d33" />
+  <path
+    d="M22 18c3-3 7-3 10 0s7 3 10 0M22 30c3-3 7-3 10 0s7 3 10 0"
+    fill="none"
+    stroke="#f06432"
+    stroke-linecap="round"
+    stroke-width="6"
+  />
+</svg>

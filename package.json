@@ -1,0 +1,59 @@
+{
+  "name": "stamppot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Free, authless and open-source MCP servers for Dutch data.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "cf-typegen": "wrangler types --config apps/edge/wrangler.jsonc --env-interface CloudflareBindings",
+    "changeset": "changeset",
+    "check": "pnpm check:mcp-content && ultracite check && pnpm typecheck && pnpm test && pnpm build",
+    "check:mcp-content": "node scripts/check-mcp-content.mjs",
+    "deploy": "pnpm build && wrangler deploy --config dist/stamppot/wrangler.json",
+    "dev": "vite dev",
+    "fix": "ultracite fix",
+    "prepare": "husky",
+    "preview": "pnpm build && vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm cf-typegen && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "version-packages": "changeset version"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "catalog:",
+    "agents": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@changesets/cli": "3.0.1",
+    "@cloudflare/vite-plugin": "catalog:",
+    "@cloudflare/vitest-plugin": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "@stamppot/core": "workspace:*",
+    "@stamppot/mcp-calendar": "workspace:*",
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "@vitejs/plugin-rsc": "catalog:",
+    "husky": "catalog:",
+    "lint-staged": "catalog:",
+    "marked": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "ultracite": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:",
+    "yaml": "catalog:"
+  },
+  "packageManager": "pnpm@9.10.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@stamppot/http-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@stamppot/core": "workspace:*",
+    "zod": "catalog:"
+  }
+}

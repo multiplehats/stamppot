@@ -1,0 +1,14 @@
+{
+  "name": "@stamppot/mcp-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "catalog:",
+    "@stamppot/core": "workspace:*",
+    "agents": "catalog:"
+  }
+}

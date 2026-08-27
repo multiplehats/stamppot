@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+
+  changeset:
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'changesets-release/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Require a changeset
+        run: |
+          if ! git diff --name-only --diff-filter=A "origin/${GITHUB_BASE_REF}...HEAD" -- '.changeset/*.md' | grep -q .; then
+            echo "Every pull request must add a changeset. Run pnpm changeset for a package release or pnpm changeset --empty for a non-release change." >&2
+            exit 1
+          fi
+
+  release:
+    if: github.event_name == 'push'
+    needs: check
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create or update the release pull request
+        id: changesets
+        uses: changesets/action@v2
+        with:
+          commit-message: "chore: version packages"
+          create-github-releases: false
+          pr-title: "chore: version packages"
+          push-git-tags: false
+          version-script: pnpm version-packages
+      - name: Run CI for the release pull request
+        if: steps.changesets.outputs.has-changesets == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PULL_REQUEST_NUMBER: ${{ steps.changesets.outputs.pr-number }}
+        run: |
+          release_ref=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PULL_REQUEST_NUMBER}" --jq '.head.ref')
+          gh workflow run ci.yml --ref "${release_ref}"
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: check
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stamppot-personal-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Deploy Worker to the Personal account
+        run: pnpm deploy
+        env:
+          CLOUDFLARE_ACCOUNT_ID: d61f96f2a058dbe3857d567eb1779c94
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

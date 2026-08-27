@@ -1,0 +1,20 @@
+{
+  "name": "@stamppot/edge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@parsew/sdk": "catalog:",
+    "@stamppot/core": "workspace:*",
+    "@stamppot/http-adapter": "workspace:*",
+    "@stamppot/mcp-adapter": "workspace:*",
+    "@stamppot/mcp-calendar": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "rsc-html-stream": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:"
+  }
+}
