@@ -1,75 +1,85 @@
-# Plan 001: Build the authless groceries MCP on R2 and Durable Objects
+# Plan 001: Build the lean authless groceries MCP on R2 and Durable Objects
 
 > **Executor instructions**: Follow this plan step by step. Run every verification command and confirm the expected result before moving to the next step. If anything in the "STOP conditions" section occurs, stop and report; do not improvise. When done, update the status row for this plan in `plans/README.md`, unless a reviewer dispatched you and said they maintain the index.
 >
-> **Worktree prerequisite (run first)**: `git rev-parse --verify HEAD`
+> **Worktree prerequisite**: execute only in an isolated worktree whose non-plan source tree is based on commit `4afd9cf`. The current plan is newer than that source baseline. Before dispatch, either create a plan-only handoff commit containing `plans/001-build-groceries-mcp.md` and `plans/README.md`, or copy those two current files into the isolated worktree. Do not implement in the operator's main checkout.
 >
-> This repository had an unborn `main` branch when the plan was written, so there is no planned-at commit SHA and a normal Git worktree cannot yet be created. The command above must print a commit SHA. If it fails, STOP: ask the operator to create or identify the intended baseline commit, then create an isolated worktree from it. Do not create the baseline commit, stage the user's files, or implement in the original uncommitted checkout on your own authority.
+> **Drift check (run first)**:
 >
-> **Snapshot drift check (run second)**: from the execution worktree, run the `shasum` command in "Current state" and compare every hash. If an existing in-scope file differs, compare its live code with the excerpts below. Any semantic mismatch is a STOP condition. A line-ending-only or plan-status-only difference is not semantic drift.
+> ```bash
+> git diff --stat 4afd9cf..HEAD -- package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.node.json SECURITY.md apps/edge/package.json apps/edge/wrangler.jsonc apps/edge/src/worker.ts packages/mcp-adapter/src/index.ts packages/mcp-calendar/src/index.ts CONTRIBUTING.md README.md test/worker.test.ts docs/research/mcp-worker-architecture.md .github/workflows/ci.yml
+> ```
+>
+> Expected at the start: no output. `git status --short` may show only the two copied plan files when the copy-based handoff was used; otherwise it must be clean. If any non-plan file changed after `4afd9cf`, compare its live behavior with "Current state" before proceeding. A semantic mismatch is a STOP condition.
 
 ## Status
 
 - **Priority**: P1
 - **Effort**: L
-- **Risk**: HIGH
-- **Depends on**: a baseline commit and an isolated worktree
+- **Risk**: MED
+- **Depends on**: none
 - **Category**: direction
-- **Planned at**: unborn `main` worktree snapshot, 2026-08-27
+- **Source baseline**: commit `4afd9cf`, 2026-08-27; current plan supplied separately or in a plan-only handoff commit
 
 ## Why this matters
 
-Stamppot's primary consumer is an agent such as Hermes or OpenClaw. A user asks where shampoo is cheapest, asks the agent to price a birthday party, or asks it to remember a list and tell them whether its price has dropped. The MCP should answer those questions deterministically, with source freshness and honest package assumptions, while remaining usable without accounts or OAuth.
+Stamppot's primary consumer is an agent such as Hermes, OpenClaw, or Claude. Users want to ask where shampoo is cheapest, turn a birthday plan into real packages and an estimated total, and optionally retain a short shopping list without creating an account.
 
-The cheapest fitting Cloudflare architecture separates two workloads. The open supermarket catalog is rebuilt in bulk and read often, so store immutable, precomputed query artifacts in R2 and serve the hosted copy through an R2 custom domain with Cache Rules and Smart Tiered Cache. Shopping lists and watches are small mutable state, so use one SQLite-backed Durable Object per unguessable anonymous capability. Do not add D1 in this version.
+The first release should solve those jobs without also becoming a price-history product, notification system, deployment framework, or general database. Current catalog artifacts live in a private R2 bucket and are read through one Worker binding. Each saved list is one bounded document in one SQLite-backed Durable Object addressed by an unguessable bearer capability. There is no D1, public R2 custom domain, Tiered Cache, price history, watch subsystem, server-side AI, OAuth, or provisioning wizard in this plan.
 
 ## Product and architecture decisions
 
-These decisions are part of the public contract. Do not silently change them while implementing.
+These are part of the v1 contract. Do not silently add a deferred subsystem while implementing.
 
 ### User job
 
-- The calling agent owns conversational reasoning: converting “a birthday for 16 adults and 6 children” into concrete items and quantities, asking follow-up questions, and presenting trade-offs.
-- Stamppot owns Dutch grocery retrieval: matching a query to real packages, separating checkout price from comparable unit value, calculating package counts, comparing retailer combinations, totaling matched items, and returning unmatched items and assumptions.
-- Never represent an unmatched item as €0. A party quote may be partial, but it must say so and give `pricedLineCount`, `unmatchedLineCount`, and an explicit confidence/freshness result.
-- One-shot basket pricing must not require a caller-generated identifier or persisted server state. A caller repeats or refines a quote by sending back the returned `replayInput`; retaining a saved-list key is a separate, explicitly stateful workflow.
+- The calling agent owns conversational reasoning: turning “a birthday for 16 adults and 6 children” into concrete grocery lines and quantities, asking follow-up questions, and presenting trade-offs.
+- Stamppot owns Dutch grocery retrieval: matching those lines to real packages, distinguishing checkout price from comparable unit value, rounding package counts, comparing retailer combinations, totaling matched items, and returning unmatched items and assumptions.
+- Never represent an unmatched item as €0. A partial quote must expose `pricedLineCount`, `unmatchedLineCount`, and incomplete status.
+- A one-shot basket needs no domain identifier or server-side quote. Follow-ups resend the complete returned `replayInput`.
+- A saved shopping list is separate application state. The caller must retain and resend its `listKey`; no MCP session, chat, profile, or account is treated as identity.
 
-### Storage decision
+### Storage and deployment
 
-| Concern | Choice | Reason |
+| Concern | V1 choice | Reason |
 |---|---|---|
-| Searchable catalog | Immutable JSON artifacts in R2 | Daily bulk replacement and cacheable reads; no row-import/index-write bill |
-| Hosted cache | R2 custom domain + Cache Rules + Smart Tiered Cache | Shared CDN cache and shielded R2 origin |
-| Local/self-hosted catalog | Direct R2 binding | No custom domain or cache setup required |
-| Lists and watches | SQLite-backed Durable Object per capability | Atomic revisions, isolation, TTL deletion, available on Workers Free |
-| Accounts/auth | No accounts or OAuth; 128-bit bearer `listKey` | Possession grants access to exactly one saved list; no global enumeration |
-| Abuse control | Workers Rate Limiting binding on list writes | Cheap approximate protection without CAPTCHA or user identity |
+| Searchable catalog | Immutable, versioned JSON search shards in private R2 | Cheap daily replacement and bounded reads without database imports |
+| Catalog reads | Direct `GROCERIES_CATALOG` R2 binding for hosted, local, and self-hosted use | One topology and no public bucket, custom domain, cache rules, or HTTP adapter |
+| Shopping lists | One key/value document in one SQLite-backed Durable Object per `listKey` | Strong per-list consistency with no application SQL schema or migrations |
+| Accounts/auth | No accounts or OAuth; random 128-bit bearer `listKey` | Possession grants access to exactly one list and there is no global enumeration |
+| Abuse control | Workers Rate Limiting binding before list saves | Approximate protection for the only mutating operation |
+| Setup | Checked-in Wrangler config, catalog sync CLI, and copy-paste runbook | Clone-and-run without maintaining a second interactive deployment program |
 
-Do not use `caches.default.put()` for catalog objects. Cloudflare documents that Cache API entries are local and do not participate in Tiered Cache. The hosted `HttpCatalogObjectStore` must use `fetch()` against the R2 custom domain. The fallback `R2CatalogObjectStore` uses the binding directly and accepts the extra Class B reads.
+R2 custom-domain caching and Smart Tiered Cache are deferred until observed R2 read volume or latency justifies a second read path. Do not add `HttpCatalogObjectStore`, `GROCERIES_CATALOG_BASE_URL`, `caches.default`, a public bucket, or cache configuration in v1.
 
-### Why not D1
+The Cloudflare products are reusable across future MCPs; these concrete resources are not a communal datastore. Keep `stamppot-groceries-catalog` dedicated to the grocery source because its publisher, provenance, retention, and credentials form one boundary. A future MCP gets its own bucket when those differ. Likewise, each stateful domain class gets its own Durable Object binding/namespace; never store another MCP's state inside `ShoppingListObject`. Extract shared code only after a second real consumer, not shared data ownership now.
 
-The Checkjebon snapshot inspected on 2026-08-27 contained 12 retailer entries and 104,995 offers. A prototype three-character token-prefix index over that snapshot produced 128 JSON shards totaling about 38.4 MB uncompressed: approximately 300 KB average and 764 KB maximum per shard. That is a small R2/CDN workload. By contrast, D1 Free currently allows 100,000 rows written per day, and index writes count too, so even an initial one-row-per-offer import would cross the free daily write allowance before indexes or history.
+### Explicitly deferred
 
-D1 may be reconsidered only if a future product requires ad-hoc relational queries that cannot be compiled into bounded artifacts. It is not a fallback to add during this implementation.
+- `find_price_drops`, `get_price_history`, price watches, notifications, history artifacts, and temporal deletion logic.
+- Caller-selectable `catalogVersion` and exact historical quote replay. Return the current version for provenance, but repeated calls intentionally use the latest published prices.
+- Fine-grained list mutations, `lineId`, `watchId`, optimistic revisions, and multi-table list schemas. The caller replaces one complete bounded list document.
+- MCP operation annotations and changes to `packages/core`. Self-describing Zod field descriptions remain required.
+- A setup wizard, custom-domain/Tiered Cache path, D1, user accounts, server-side LLM calls, recipe generation, and checkout automation.
 
 ## Current state
 
 The repository is a pnpm/TypeScript monorepo deployed as one Cloudflare Worker.
 
-- `package.json:8-22` defines the exact gates: `pnpm check` runs content validation, Ultracite, typecheck, tests, and build; `pnpm cf-typegen` generates `CloudflareBindings` from Wrangler config.
-- `pnpm-workspace.yaml:1-3` already includes every directory under `packages/*`, so creating `packages/mcp-groceries` requires no workspace-glob change. The same file's catalog holds pinned dependency versions.
-- `CONTRIBUTING.md:5-20` requires `packages/mcp-<domain>`, one exported `McpDefinition`, one content Markdown file per operation, source/licence/freshness/error documentation, and deterministic tests with no live upstream.
-- `packages/mcp-calendar/src/index.ts:13-70` is the structural exemplar: define each operation with `defineOperation`, then group operations with `defineMcp`.
-- `packages/core/src/index.ts:11-17` exposes operation descriptions but has no tool-annotation field. Add an optional neutral `OperationAnnotations` shape so model-facing behavior hints remain part of the operation interface instead of being hard-coded in an adapter.
-- `packages/mcp-adapter/src/index.ts:24-32` forwards operation title, description, input schema, and output schema to MCP. Lines 64-68 currently use `legacy: "reject"`; broaden that one option to `legacy: "stateless"` so ordinary 2025 Streamable HTTP clients work without adding protocol sessions or deprecated standalone SSE.
-- `apps/edge/src/worker.ts:14-30` constructs one module-scope registry and separate combined/domain MCP handlers. Lines 91-168 route MCP, plain HTTP, health, sitemap, tool pages, and landing output.
-- `apps/edge/wrangler.jsonc:1-13` has no storage or rate-limit bindings yet. It already uses compatibility date `2026-08-27`, `nodejs_compat`, assets, and observability.
-- `vitest.config.ts:6-12` runs tests with `@cloudflare/vitest-plugin` against `apps/edge/wrangler.jsonc`; `test/worker.test.ts` is the route/MCP exemplar.
-- `docs/research/mcp-worker-architecture.md` currently defers persistence and assumes an explicitly authenticated state handle. The new decision docs must narrow that statement: catalog reads stay public; anonymous state uses a bearer capability token without accounts.
-- Landing/tool pages are generated from the operation registry and operation content. Registering the MCP should add its pages automatically; do not hand-edit landing components or design tokens.
+- `package.json:8-22` defines the exact gates. `pnpm check` runs content validation, Ultracite, typecheck, tests, and build; `pnpm cf-typegen` generates `CloudflareBindings` from the Wrangler config.
+- `pnpm-workspace.yaml:1-3` already includes `packages/*`. Its catalog pins shared dependency versions.
+- `CONTRIBUTING.md:5-20` requires a `packages/mcp-<domain>` package, one exported `McpDefinition`, one content Markdown file per operation, explicit source/licence/freshness/error documentation, and deterministic offline tests.
+- `packages/mcp-calendar/src/index.ts:13-70` is the operation/MCP exemplar: define operations with `defineOperation`, then group them with `defineMcp`.
+- `packages/mcp-adapter/src/index.ts:24-32` already forwards title, description, and Zod schemas. Lines 64-68 use `legacy: "reject"`; changing that option to `legacy: "stateless"` enables ordinary 2025 Streamable HTTP clients without transport sessions or deprecated standalone SSE. The callback currently returns raw `Error.message` text, and MCP POST bodies do not yet use the repository's 64 KiB application bound; both must be hardened before publishing more authless tools.
+- `apps/edge/src/worker.ts:14-30` constructs an immutable module-scope registry and separate combined/domain MCP handlers. Lines 91-168 route MCP, plain HTTP, health, sitemap, tool pages, and landing output.
+- `apps/edge/wrangler.jsonc:1-13` currently has no storage or rate-limit bindings. It uses compatibility date `2026-08-27`, `nodejs_compat`, assets, and observability.
+- `vitest.config.ts:6-12` runs tests inside the Workers runtime against `apps/edge/wrangler.jsonc`; `test/worker.test.ts` is the route/MCP exemplar and `test/env.d.ts` already extends generated `CloudflareBindings`.
+- `tsconfig.node.json` currently includes build and test configuration files but excludes `scripts/**/*.ts`, so the new sync CLI would otherwise escape the normal typecheck gate.
+- `SECURITY.md` currently describes every hosted MCP as read-only. It must distinguish authless catalog reads from the one bounded, capability-authorized shopping-list write without implying an account or global identity.
+- `docs/research/mcp-worker-architecture.md` currently says future state should use an authenticated handle. The groceries decision must narrow that statement: public reads remain authless, while a random list capability authorizes one anonymous document.
+- Landing and tool pages are generated from the operation registry and content files. Do not edit `apps/edge/src/landing/**` or `DESIGN.md`.
 
-The important existing shapes are:
+Important existing shapes:
 
 ```ts
 // packages/core/src/index.ts:5-9
@@ -86,73 +96,45 @@ const registry = new OperationRegistry([calendarMcp]);
 const toolCatalog = toolContent(registry);
 ```
 
-Do not add catalog/state fields to `OperationContext`. Build `createGroceriesMcp(dependencies)` and close over narrow dependency interfaces, so package tests can inject in-memory fakes and the Worker can inject Cloudflare bindings without changing the core abstraction.
-
-### Snapshot hashes
-
-Run:
-
-```bash
-shasum -a 256 package.json pnpm-workspace.yaml apps/edge/package.json apps/edge/wrangler.jsonc apps/edge/src/worker.ts packages/core/package.json packages/core/src/index.ts packages/mcp-adapter/package.json packages/mcp-adapter/src/index.ts packages/mcp-calendar/src/index.ts CONTRIBUTING.md README.md test/worker.test.ts docs/research/mcp-worker-architecture.md
-```
-
-Expected plan-time snapshot:
-
-```text
-7978549a8dc4b42131ac949bbc6dbd686a0ff0d3c9203a4c77e22b2c57f7b519  package.json
-f87e0eeab4535885a26ee599441737ff864a2fd05867935bd239e951a2a572a6  pnpm-workspace.yaml
-bab67cc6ed5493654a80dba9fef149aa1010f658b815574110633a9b4073dc0c  apps/edge/package.json
-220afbad746a0ffbc08a2e23645afe844aa9da83397f2fab8fb3e49c52e00cc2  apps/edge/wrangler.jsonc
-ec15e47324c49c643c4e84b2cef44d0e6dddbf77a802d97de868f2c440326d5a  apps/edge/src/worker.ts
-d9ec7b5b0ed0d3f5b8c3ccd7a39044d455697cf752ab13093c516b6980cebf23  packages/core/package.json
-55750d0464f1ad70162b7ecaaa386be5017ff0be25b52ef4522014f96a9cbd58  packages/core/src/index.ts
-09d3dd51ba5641fe3a4e4426b86b05283317de69ecf4aeb04ef118a98ccf2edf  packages/mcp-adapter/package.json
-74bbe48d56b14517f95cd728e67dee301d3fc9a0a01769ceb71d9cf3b30162ab  packages/mcp-adapter/src/index.ts
-8245e6c79b869bb4a4b9d36e89305db2d66e47f5f05103265c209cceb7bcfcb1  packages/mcp-calendar/src/index.ts
-7a01130d051615123601d5e9092d6fa9c97b2549b7febe0411b6ed168254502d  CONTRIBUTING.md
-13f999ead5b7b49f5a6919cb5d326f7daa3a7d0b3b64c6476c061039d4024648  README.md
-9e63054dc3cb69e006613b2527b8f3f38d6d861093937b4fb238bcd27ee7c666  test/worker.test.ts
-558ecbdd56d3cad45e5ea3ce54d2eff22207f71ab0ce2aa36b8f553be93581ee  docs/research/mcp-worker-architecture.md
-```
+Do not add catalog or state fields to `OperationContext`. Build `createGroceriesMcp(dependencies)` and close over narrow interfaces so tests inject in-memory fakes and the Worker injects Cloudflare bindings.
 
 ## Commands you will need
 
 | Purpose | Command | Expected on success |
 |---|---|---|
-| Install/update lockfile | `pnpm install` | exit 0; `pnpm-lock.yaml` updated only for declared workspace/dependency changes |
-| Generate bindings | `pnpm cf-typegen` | exit 0; generated `CloudflareBindings` contains the R2, Durable Object, rate-limit, and catalog URL bindings |
-| Focused tests | `pnpm exec vitest run test/core.test.ts test/mcp-adapter.test.ts test/groceries-catalog.test.ts test/groceries-basket.test.ts test/groceries-state.test.ts test/groceries-worker.test.ts test/groceries-sync.test.ts` | all named files pass |
-| Content contract | `pnpm check:mcp-content` | validates all seven groceries content files |
-| Format | `pnpm dlx ultracite fix` | exit 0; inspect and keep only formatting/lint fixes in scope |
+| Install/update lockfile | `pnpm install` | exit 0; lockfile changes only for declared workspace/dependency changes |
+| Generate bindings | `pnpm cf-typegen` | exit 0; generated types include R2, Durable Object, and rate-limit bindings |
+| Focused tests | `pnpm exec vitest run test/mcp-adapter.test.ts test/groceries-catalog.test.ts test/groceries-basket.test.ts test/groceries-state.test.ts test/groceries-worker.test.ts test/groceries-sync.test.ts` | all six files pass |
+| Content contract | `pnpm check:mcp-content` | validates exactly four grocery content files |
+| Format | `pnpm dlx ultracite fix` | exit 0; keep only in-scope formatting changes |
 | Full gate | `pnpm check` | exit 0; content, lint, typecheck, all tests, and build pass |
-| Deploy shape | `pnpm exec wrangler deploy --config dist/stamppot/wrangler.json --dry-run` | exit 0; no remote deployment occurs |
-| Frozen install | `pnpm install --frozen-lockfile` | exit 0 after the lockfile has been updated |
+| Deploy shape | `pnpm exec wrangler deploy --config dist/stamppot/wrangler.json --dry-run` | exit 0; no remote deployment |
+| Frozen install | `pnpm install --frozen-lockfile` | exit 0 after lockfile update |
 
-Do not run `pnpm deploy`, the remote bootstrap command, or the remote catalog sync as verification; those mutate Cloudflare or GitHub state.
+Do not run `pnpm deploy`, remote catalog sync, R2 creation, GitHub mutation, or any other remote provisioning command as verification.
 
 ## Suggested executor toolkit
 
-If these skills are available, read and use them before editing:
+If available, use:
 
-- `cloudflare` for choosing and configuring platform bindings.
-- `workers-best-practices` for binding types, global-scope safety, `fetch`, observability, and Web Crypto.
-- `durable-objects` for SQLite migrations, RPC, alarms, and isolated tests.
-- `wrangler` for the R2 bootstrap/sync commands and dry-run deployment.
+- `cloudflare` for current R2, binding, and platform behavior.
+- `workers-best-practices` for binding types, global-scope safety, fetch behavior, and Web Crypto.
+- `durable-objects` for SQLite-backed key/value storage, RPC, alarms, and isolated tests.
+- `wrangler` for exact R2 and deployment commands in the runbook.
 
 Primary references:
 
-- [Workers best practices](https://developers.cloudflare.com/workers/best-practices/workers-best-practices/)
-- [R2 custom domains and caching](https://developers.cloudflare.com/r2/buckets/public-buckets/)
-- [R2 interaction with Cloudflare Cache](https://developers.cloudflare.com/cache/interaction-cloudflare-products/r2/)
-- [Workers Cache API and Tiered Cache limitation](https://developers.cloudflare.com/workers/runtime-apis/cache/)
 - [R2 Workers binding](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/)
+- [R2 pricing](https://developers.cloudflare.com/r2/pricing/)
+- [R2 data location and EU jurisdiction](https://developers.cloudflare.com/r2/reference/data-location/)
+- [Durable Objects rules](https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/)
+- [Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/)
 - [Workers Rate Limiting binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)
-- [Durable Objects pricing and Free-plan availability](https://developers.cloudflare.com/durable-objects/platform/pricing/)
-- [MCP tool schemas, structured content, output schemas, and annotations](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
-- `node_modules/agents/docs/mcp-servers.md` for the checked-in Agents SDK's stateless 2025 compatibility lane.
-- [Hermes MCP client setup](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp/)
-- [OpenClaw MCP client commands](https://docs.openclaw.ai/cli/mcp)
-- [Claude Desktop remote custom connectors](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)
+- [MCP tool schemas and structured content](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
+- [Hermes MCP CLI reference](https://hermes-agent.nousresearch.com/docs/reference/cli-commands/)
+- [OpenClaw MCP CLI reference](https://docs.openclaw.ai/cli/mcp)
+- [Claude remote custom connectors](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)
+- `node_modules/agents/docs/mcp-servers.md` for the installed Agents SDK's stateless 2025 lane.
 
 ## Scope
 
@@ -169,24 +151,18 @@ Primary references:
 - `packages/mcp-groceries/src/index.ts`
 - `packages/mcp-groceries/src/operations.ts`
 - `packages/mcp-groceries/src/shopping-list-object.ts`
-- `packages/mcp-groceries/content/check_price_watches.md`
 - `packages/mcp-groceries/content/find_grocery_options.md`
-- `packages/mcp-groceries/content/find_price_drops.md`
-- `packages/mcp-groceries/content/get_price_history.md`
-- `packages/mcp-groceries/content/get_shopping_list.md`
 - `packages/mcp-groceries/content/plan_grocery_basket.md`
-- `packages/mcp-groceries/content/update_shopping_list.md`
+- `packages/mcp-groceries/content/get_shopping_list.md`
+- `packages/mcp-groceries/content/save_shopping_list.md`
 - `packages/mcp-groceries/fixtures/checkjebon-small.json`
 - `scripts/groceries-catalog.ts`
-- `scripts/setup-self-hosted.mjs`
+- `test/mcp-adapter.test.ts`
 - `test/groceries-catalog.test.ts`
 - `test/groceries-basket.test.ts`
 - `test/groceries-state.test.ts`
 - `test/groceries-worker.test.ts`
 - `test/groceries-sync.test.ts`
-- `test/core.test.ts`
-- `test/mcp-adapter.test.ts`
-- `packages/core/src/index.ts`
 - `packages/mcp-adapter/src/index.ts`
 - `apps/edge/src/worker.ts`
 - `apps/edge/package.json`
@@ -194,129 +170,138 @@ Primary references:
 - `package.json`
 - `pnpm-workspace.yaml`
 - `pnpm-lock.yaml`
+- `tsconfig.node.json`
+- `SECURITY.md`
 - `README.md`
 - `docs/research/mcp-worker-architecture.md`
-- `docs/decisions/groceries-storage.md`
-- `docs/decisions/anonymous-shopping-lists.md`
+- `docs/decisions/groceries.md`
 - `docs/runbooks/groceries-self-hosting.md`
-- `.github/workflows/ci.yml`
 - `.github/workflows/groceries-catalog-sync.yml`
 - one new `.changeset/*.md` created by `pnpm changeset`
+- `plans/001-build-groceries-mcp.md` only as the pre-implementation handoff copy when that worktree method is used; do not edit it during implementation
 - `plans/README.md` for the final status update only
 
 **Out of scope** (do not touch):
 
-- Every file under `packages/core/**` except `packages/core/src/index.ts`, and every file under `packages/mcp-adapter/**` except `packages/mcp-adapter/src/index.ts`; the only framework changes allowed are optional operation annotations and the existing stateless legacy compatibility lane.
-- `packages/http-adapter/**`; dependency closure still avoids HTTP adapter changes.
-- `apps/edge/src/landing/**`, `apps/edge/src/landing/styles.css`, and `DESIGN.md`; registry/content generation already handles the new MCP and its deterministic card treatment.
-- D1 bindings, schemas, migrations, or databases.
-- User accounts, OAuth, email, API keys for MCP consumers, Turnstile, push notifications, webhooks, and background alarms per watch.
-- A general event/party ontology or any server-side LLM call.
-- Recipe generation, store location/inventory guarantees, substitutions based on dietary/medical claims, and checkout automation.
-- Committing generated `worker-configuration.d.ts`, `dist/**`, `.wrangler/**`, catalog artifacts, or fetched upstream snapshots.
-- Creating Cloudflare resources, GitHub secrets/variables, deploying, pushing, or opening a PR during implementation unless the operator separately authorizes it.
+- `packages/core/**`, `test/core.test.ts`, and operation annotations.
+- `packages/http-adapter/**`.
+- Every file under `packages/mcp-adapter/**` except `packages/mcp-adapter/src/index.ts`; that file may change only for stateless legacy compatibility, the 64 KiB parsed-body boundary, and generic non-secret tool-failure text.
+- `apps/edge/src/landing/**`, `apps/edge/src/landing/styles.css`, and `DESIGN.md`.
+- `.github/workflows/ci.yml`; provisioning the official bucket or widening the production token is an operator task, not an implementation task.
+- D1; public R2 access; custom domains; Cache Rules; Smart Tiered Cache; Workers Cache API; or a second catalog read adapter.
+- Price history, price drops, watches, notifications, offer/history/drop artifacts, caller-pinned historical versions, and stored quote objects.
+- Fine-grained list mutation commands, persisted line IDs, revisions, multi-row list schemas, or automatic list recovery.
+- User accounts, OAuth, consumer API keys, email, Turnstile, webhooks, background work other than one expiry alarm per list, or server-side AI.
+- Recipe generation, location/inventory guarantees, medical/dietary recommendations, and checkout automation.
+- A provisioning/setup wizard or any script that creates buckets, edits Wrangler config, deploys, or writes GitHub settings.
+- Committing generated `worker-configuration.d.ts`, `dist/**`, `.wrangler/**`, built catalog artifacts, or fetched production snapshots.
+- Creating Cloudflare resources, GitHub secrets/variables, deploying, pushing, or opening a PR without separate operator authority.
 
 ## Git workflow
 
-- Work only in the isolated worktree supplied by the operator. Start from a clean `git status --short`; STOP if unrelated modifications are present.
-- Suggested branch after a baseline exists: `feat/groceries-mcp`.
-- There is no commit history from which to infer a message convention. Use small logical commits with clear imperative subjects if the operator asks for commits; otherwise leave the work uncommitted for review.
+- Work only in an isolated worktree whose non-plan source tree matches `4afd9cf`. Supply the current plan through a plan-only handoff commit or copy the two plan files before implementation; in the latter case, the only allowed initial status entries are those two files.
+- Suggested branch: `feat/groceries-mcp`.
+- The only existing commit is `Initial commit`; use small logical commits with clear imperative subjects if the operator requests commits. Otherwise leave changes uncommitted for review.
 - Never push or open a PR unless explicitly instructed.
 
 ## Public MCP contract
 
-Create exactly seven operations. Names are stable and must not be expanded in this plan.
+Create exactly four grocery operations.
 
 ### 1. `find_grocery_options`
 
-Input: `query` (2-120 characters), optional retailer slugs (maximum 12), `limit` (1-20, default 10), and sort preference `checkout_price | unit_value`.
+Input: `query` (2-120 characters after trimming), `retailerSlugs` (0-12 unique slugs, default `[]` meaning all retailers), and `limit` (integer 1-20, default 10). Each retailer slug is 1-40 lowercase ASCII letters, digits, or hyphens; reject duplicates. A syntactically valid slug absent from the current catalog yields no matches for that filter and must never silently widen the search. Do not add a sort-mode mini-language.
 
-Output: matched offers with stable `offerId`, retailer name/slug, product name, package text, integer `priceCents`, `currency: "EUR"`, product URL, parsed base quantity/unit when known, comparable unit price when known, match confidence/reason, and source/freshness metadata. Also identify `cheapestUpfrontOfferId` and `bestUnitValueOfferId`; these may differ. Never compare unit prices across `g`, `ml`, `each`, and unknown/package units.
+On `status: "ok"`, output relevance-ranked matched offers with stable `offerId`, retailer name/slug, product name, package text, integer `priceCents`, `currency: "EUR"`, product URL, parsed base quantity/unit when known, comparable unit price when known, match confidence/reason, and source/freshness metadata. Break deterministic relevance ties with checkout price and then `offerId`.
+
+Also return `cheapestUpfrontOfferId` and `bestUnitValueOfferIds` with optional `mass`, `volume`, and `each` winners computed across the full bounded candidate set before applying `limit`. Normalize returned unit values to integer cents per kilogram, litre, or item. Compare rankings as exact integer ratios and round only the displayed cents value; never compare across dimensions or include unknown/package quantities in unit-value winners. The upfront and relevant unit-value winner may differ.
 
 ### 2. `plan_grocery_basket`
 
-This operation is stateless, read-only, and safe to invoke repeatedly. It must not require or return a stored quote ID.
+This operation is stateless, read-only, and safe to invoke repeatedly. It has no quote ID.
 
-Input: 1-20 ordered lines. Each line has `query` (2-120 characters), optional target `{ value, unit: "g" | "kg" | "ml" | "l" | "each" | "package" }`, and optional `optional` boolean defaulting to `false`. The outer input also accepts an optional budget in integer cents, retailer filter, `maxStores` 1-3, and optional `catalogVersion`. There is deliberately no caller-provided line ID. Preserve input order and correlate every selected, unmatched, excluded, and assumption record with a one-based `lineNumber` plus the original query.
+Input: 1-20 ordered lines. Each has `query` (2-120 characters after trimming), optional target `{ value, unit: "g" | "kg" | "ml" | "l" | "each" | "package" }`, and optional `optional` boolean defaulting to `false`. Quantity values must be finite and positive; after conversion a mass or volume target is at most 1,000,000 g or ml, and `each`/`package` is an integer at most 10,000. The outer input accepts `budgetCents` (safe integer 0-100,000,000; no default), `retailerSlugs` with the same rules and default as search, and `maxStores` (integer 1-3, default 3). It does not accept `catalogVersion` or a line ID. Preserve order and correlate every selection, unmatched line, exclusion, and assumption with a one-based `lineNumber` and original query.
 
-If target is omitted, price exactly one sale package. Convert `kg` and `l` to `g` and `ml`; `each` and `package` require positive integers. `package` means a count of sale packages and does not require a parsed package quantity. A matched optional line is still priced; an unmatched optional line is reported but does not make the quote incomplete. Budget is comparative metadata and never silently drops a line.
+If target is omitted, price one sale package. Convert `kg` and `l` to `g` and `ml`; `each` and `package` require positive integers. `package` means a count of sale packages and does not require a parsed quantity. A matched optional line is priced; an unmatched optional line is reported but does not make the quote incomplete. Budget is comparative metadata and never silently removes a line.
 
-Resolve the current manifest exactly once at call start when `catalogVersion` is omitted. Output top-level `catalogVersion`, `quotedAt`, and `replayInput`, plus both `bestSingleStore` and `cheapestWithinStoreLimit` when possible. `replayInput` is a complete, schema-valid input with every default made explicit and the resolved catalog version pinned; an agent can copy it verbatim, change one field, and call the tool again. The same `replayInput` while that immutable version is retained must produce the same selections, ordering, assumptions, and totals; only `quotedAt` may change. Removing `catalogVersion` intentionally refreshes against the latest manifest. A requested version outside retention returns `catalog_version_unavailable`.
+Resolve the current manifest exactly once at call start. On `status: "ok"`, output top-level `catalogVersion`, `quotedAt`, and `replayInput`, plus `bestSingleStore` and `cheapestWithinStoreLimit` when possible. `replayInput` is complete and schema-valid: it uses trimmed queries, `target: { value: 1, unit: "package" }` when target was omitted, explicit `optional: false`, explicit `retailerSlugs: []`, and explicit `maxStores: 3`; it omits `budgetCents` only when the caller supplied no budget because absence is not a defaulted value. It deliberately contains no catalog version. An agent can resend it verbatim or change one field. If the catalog advanced, the repeated result may change; that is desired because grocery questions should use current prices.
 
-Each plan includes selected packages, package counts calculated with `ceil(targetBaseQuantity / packageBaseQuantity)`, line totals, retailer totals, integer `pricedTotalCents`, budget delta, package-rounding assumptions, unmatched lines, and source freshness. Enumerate retailer combinations only across the bounded 12 retailers and maximum three stores. No item may be silently dropped or priced at zero.
+Each plan includes selected packages, package counts calculated with `ceil(targetBaseQuantity / packageBaseQuantity)`, line totals, retailer totals, integer `pricedTotalCents`, budget delta, package-rounding assumptions, unmatched lines, and source freshness. Enumerate retailer combinations only across the bounded 12 retailers and maximum three stores. Never silently drop or zero-price an item.
 
-This is the party-planning seam: Hermes, OpenClaw, or Claude turns the occasion into at most 20 concrete lines; this operation turns those lines into packages and a cost. Its MCP description must say both facts explicitly: first decompose an occasion into concrete grocery lines; for a follow-up, resend the complete returned `replayInput`. Add a deterministic fixture test representing 16 adults and 6 children with drinks, snacks, cake ingredients, and disposable supplies.
+Choose plans lexicographically: maximize matched required lines, then matched optional lines, then minimize `pricedTotalCents`, then minimize store count, then break ties by sorted retailer slugs and `offerId`. Within one retailer and line, select the compatible offer with the lowest package-rounded line total; break ties by least excess quantity, checkout price, then `offerId`. An offer with unknown quantity can satisfy only an omitted target or a `package` target, never a mass, volume, or each target. Report globally unmatched lines separately from lines unavailable in a particular store combination so a cheaper partial basket never masquerades as a complete winner.
 
-### 3. `find_price_drops`
+The MCP description must tell agents to decompose an occasion into at most 20 concrete lines, then call this tool. For follow-ups it must tell them to resend the complete returned `replayInput`. Add the exact deterministic birthday oracle in Step 4 for 16 adults and 6 children.
 
-Input: optional query and retailer filters, minimum percentage drop, and limit 1-20. Output bounded current drops from the published catalog version, including before/after cents, percentage, offer identity, URL, and observed dates.
+### 3. `get_shopping_list`
 
-### 4. `get_price_history`
+Input: one `listKey` matching the exact capability format below. On `status: "ok"`, output the same key, `savedAt`, `expiresAt`, and the complete stored document. The document contains optional `title` (1-100 characters after trimming), optional `budgetCents` with the basket cap, and 0-20 ordered lines using the same query/target/optional caps plus `checked` (default `false`). The canonical returned document fills the target/boolean defaults described above and must serialize to at most 16 KiB of UTF-8 JSON. It contains no quote, offer selection, revision, persisted line ID, note, or watch.
 
-Input: one `offerId`. Output at most 90 days of price-change events (do not repeat an unchanged daily price), current availability/price, and freshness. Missing products return an explicit `unavailable` state rather than a fabricated price.
+This operation reads only the Durable Object. It must not access R2 or call the planner. Its description tells the agent to pass the desired unchecked or complete lines to `plan_grocery_basket` when the user asks for current prices. Reads do not extend expiry.
 
-### 5. `get_shopping_list`
+### 4. `save_shopping_list`
 
-Input: one `listKey`. Return the same `listKey`, title, budget, server-generated line/watch identifiers, revision, expiry, and a current basket quote using the same planner. Reads do not extend expiry. Treat invalid, expired, and unknown capabilities as stable domain errors without revealing whether similar keys exist.
+Input: optional `listKey` plus one complete replacement document in the same bounded shape returned by `get_shopping_list`. Omit `listKey` to create a list and generate one server-side; supply it to replace that list's entire document. On `status: "ok"`, output `listKey`, `savedAt`, `expiresAt`, and the canonical stored document.
 
-### 6. `update_shopping_list`
+There is deliberately no mutation array, `lineId`, revision, merge behavior, or partial update. The tool description must tell the agent to call `get_shopping_list` before changing an existing list, preserve every line the user wants, edit the document, and resend the whole document. Concurrent callers use last-write-wins. This is an explicit v1 trade-off for a personal list capped at 20 lines.
 
-Input: optional `listKey` for creation; `expectedRevision` is required for every update to an existing list; one atomic array of mutations from `set_title`, `set_budget`, `upsert_line`, `remove_line`, `set_checked`, `upsert_watch`, and `remove_watch`. An `upsert_line` without `lineId` creates a line and assigns one server-side; an `upsert_line` with `lineId` updates it. Removal/check mutations require an identifier returned by the list tools. Watches follow the same create-without-ID/update-with-ID rule.
+Creation is not idempotent: losing a create response and retrying without its `listKey` may create an unreachable second list. The server cannot recover a lost key or infer which list belongs to an MCP connection, conversation, Claude account, Hermes profile, or OpenClaw session.
 
-On creation, generate a random 128-bit base64url `listKey` with Web Crypto. Every successful shopping-state response returns the continuation tuple `{ listKey, revision }` and the complete canonical state, so the next agent call need only copy server-owned identifiers. Possession of `listKey` is the authorization mechanism. Cap state at 20 list lines, 20 watches, a 100-character title, 120-character queries, 500-character notes, and 64 KiB serialized state. Return revision conflicts with the non-secret current revision and recovery instruction to call `get_shopping_list`; do not use last-write-wins.
+### Shared contract rules
 
-Creation is not idempotent: if a client loses the response and retries without `listKey`, it may create a second unreachable list. Say this in the tool description and runbook. The server cannot recover a lost key or infer which list belongs to an MCP connection, conversation, Claude account, Hermes profile, or OpenClaw session.
+- Every output includes compact provenance where catalog data is involved: source name, source URL, licence, current catalog version, and `observedAt`.
+- Package docs and tool content state that prices are indicative snapshots, may differ by location or checkout time, and do not guarantee inventory.
+- Every input property, including nested basket/list lines and quantity/filter fields, uses Zod `.describe(...)` text explaining meaning, units, and omission/default behavior. Tool clients primarily see `tools/list`; content pages are not a substitute.
+- Do not add MCP annotation plumbing to core. Make mutating/read-only behavior explicit in tool titles and descriptions.
+- All schemas use `.strict()`. Canonicalization trims outer whitespace but does not invent synonyms in saved state; search normalization and the reviewed alias map apply only during catalog matching.
 
-### 7. `check_price_watches`
+Expected domain failures are schema-conforming tool results, not thrown exceptions, so Hermes, OpenClaw, Claude, and the plain HTTP routes see the same stable shape:
 
-Input: `listKey`. Return the same continuation tuple and pull-evaluate at most the 20 stored watches against the current catalog. Support `offer_price` (`offerId`, `belowCents`) and `basket_total` (`belowCents`, `maxStores`). Return triggered/not-triggered/unavailable status with current value and freshness. Do not add per-watch alarms or outbound notifications.
+| Condition | Tool result | HTTP/MCP behavior |
+|---|---|---|
+| Success, including zero search matches | `status: "ok"`; search may contain an empty `offers` array | HTTP 200 and MCP structured content |
+| Catalog manifest/object missing or corrupt | `status: "catalog_unavailable"`, `retryable: true` | HTTP 200 and MCP structured content; no object key or parser detail |
+| Validly shaped but missing/expired list capability | `status: "unknown_list"`, `retryable: false` | HTTP 200 and MCP structured content; never echo the key |
+| Save rejected by the abuse brake | `status: "rate_limited"`, `retryable: true`, `retryAfterSeconds: 60` | HTTP 200 and MCP structured content |
+| Invalid JSON/schema or body over 64 KiB | No domain result | Existing transport error; stable 400/413 on plain HTTP and a non-secret MCP protocol/tool error |
+| Unexpected programming/platform failure | No domain result | Existing generic HTTP `internal_error`; MCP returns only `Error: Tool invocation failed` and never raw `Error.message` |
 
-Every operation output includes a compact provenance object with source name, source URL, license, catalog version, and `observedAt`. The package README and tool content must say prices are indicative snapshots, may differ by location/checkout time, and are not inventory guarantees.
+Every operation output schema includes its allowed top-level `status` values. Because core requires a top-level `ZodObject`, success-only fields are optional in the JSON Schema; operation code and tests enforce that they are present for `status: "ok"` and absent for failure statuses. Test every row through the relevant direct operation plus MCP/HTTP boundary; do not leak capabilities, R2 object keys, source payload fragments, stack traces, or exception messages.
 
-Every input property, including nested basket-line, quantity, filter, mutation, and watch properties, must use Zod `.describe(...)` text that states meaning, units, default/omission behavior, and one compact example where useful. The MCP `tools/list` descriptor is what Hermes/OpenClaw/Claude see; the richer `content/*.md` page is not a substitute for a self-explanatory JSON Schema.
-
-Mark `plan_grocery_basket` with MCP annotations `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, and `openWorldHint: true`. Add an optional `OperationAnnotations` field to the core operation interface and forward it unchanged from the MCP adapter. Annotate the other six operations accurately; in particular, `update_shopping_list` is mutating and non-idempotent because its create form can allocate a new list.
+At each grocery operation's dependency boundary, translate expected catalog/list/limiter failures to the domain statuses above. Catch any other dependency failure and throw a fresh generic error without copying its message, cause, input, key, or object path. This keeps the existing plain HTTP adapter's response and structured error log generic without expanding this feature into a shared HTTP-adapter rewrite.
 
 ### Identifier contract
 
-| Name | Owner and format | Stability and use |
+| Name | Owner and format | Use |
 |---|---|---|
-| `lineNumber` | Server response; integer 1-20 | Correlates one stateless basket result to ordered input. It is not an identifier and must not be sent back. |
-| `catalogVersion` | Server-owned opaque timestamp/hash string | Pins all catalog reads in one quote and enables deterministic replay while retained. Clients copy it but do not parse it. |
-| `offerId` | `off_` plus unpadded base64url of the full SHA-256 digest of UTF-8 `v1\0{retailerSlug}\0{canonicalSourcePath}` | Stable across catalog versions only while retailer slug and canonical source path remain unchanged. Opaque and case-sensitive. |
-| `listKey` | `lst_` plus 22 unpadded base64url characters encoding 16 random bytes | Bearer capability for exactly one saved list. Opaque, case-sensitive, unrecoverable, and required only for saved-state tools. |
-| `lineId` / `watchId` | Server-generated opaque IDs within one saved list | Used only to update/remove persisted entries. Returned in complete canonical state; never required when creating an entry. |
+| `lineNumber` | Server response; integer 1-20 | Correlates a basket result with ordered input. It is not sent back as an ID. |
+| `catalogVersion` | Server-owned opaque timestamp/hash string, output only | Provenance for the current snapshot. Callers do not parse or request it. |
+| `offerId` | `off_` plus unpadded base64url of SHA-256 over `v1\0{retailerSlug}\0{canonicalSourcePath}` | Stable opaque correlation value while the source path remains stable; no v1 tool accepts it as input. |
+| `listKey` | `lst_` plus 22 unpadded base64url characters encoding 16 random bytes | Bearer capability for exactly one list; opaque, case-sensitive, and unrecoverable. |
 
-JSON-RPC request IDs are protocol details and must never be exposed as grocery-domain identifiers.
+JSON-RPC request IDs are protocol details and never become grocery-domain identifiers.
 
 ## Catalog artifact contract
 
-Use this exact logical layout; the manifest is the sole mutable pointer and is published last:
+Use this logical layout. The manifest is the sole mutable pointer and is published last:
 
 ```text
 catalog/manifest.json
-catalog/versions/{version}/retailers.json
 catalog/versions/{version}/index/000.json ... 127.json
-catalog/versions/{version}/offers/000.json ... 127.json
-catalog/versions/{version}/history/000.json ... 127.json
-catalog/versions/{version}/price-drops.json
-catalog/versions/{version}/metadata.json
 ```
 
-- `version` is an observed UTC timestamp plus a short SHA-256 of the normalized source.
-- Every version object includes `formatVersion`, content hash, source, license, and observation time where appropriate. Versioned object keys are immutable.
-- `manifest.json` contains at least `formatVersion`, `currentVersion`, `observedAt`, `source`, `license`, `shardCount: 128`, and integrity hashes. Validate every referenced object before publishing it.
-- Upload every version object first, then atomically replace `manifest.json`. A failed build/upload must leave the prior manifest live.
-- Give immutable objects `Cache-Control: public, max-age=31536000, immutable`. Give the manifest `Cache-Control: public, max-age=60` on the public custom-domain path.
-- Keep version objects for 30 days through an R2 lifecycle rule documented in the runbook. Keep price-change events for a rolling 90 days. Never place list state, capabilities, logs, or secrets in R2.
-- Fetch the open Checkjebon source from `https://www.checkjebon.nl/data/supermarkets.json`; document its project at `https://github.com/supermarkt/checkjebon` and the applicable MIT licence. Validate its shape strictly: retailer `{ n, c, u, i, d }`; product `{ n, l, p, s }`. Reject a malformed or empty source before any publish.
-- Derive a stable `offerId` from retailer and source product path using SHA-256. Do not use array positions.
+- `version` is an observed UTC timestamp plus a short SHA-256 of normalized source data.
+- `manifest.json` contains `formatVersion`, `currentVersion`, `observedAt`, source, licence, `shardCount: 128`, offer/retailer counts, and integrity hashes for all 128 referenced shards. There is no separate retailer metadata object because every index record already carries all retailer fields needed at runtime.
+- Versioned keys are immutable. Validate and upload all version objects before atomically replacing the manifest. A failed build/upload leaves the prior manifest live.
+- V1 never deletes version objects and configures no bucket lifecycle rule. At the measured ~38.4 MB daily artifact size this adds roughly 14 GB in one year, about $0.21/month at the current R2 storage rate at year end. That bounded initial cost is preferable to adding an S3 listing dependency, a cleanup endpoint, broader credentials, or risking deletion of a live/in-flight snapshot. Retained objects are internal implementation debris, not a public historical lookup guarantee; add protected cleanup only after measured storage warrants it.
+- The bucket remains private. Never place list state, capabilities, logs, secrets, or unrelated MCP data in it.
+- Fetch `https://www.checkjebon.nl/data/supermarkets.json`; document `https://github.com/supermarkt/checkjebon` and its MIT licence. Strictly validate retailer `{ n, c, u, i, d }` and product `{ n, l, p, s }`; reject malformed or empty input before publication. Map retailer `n` to slug, `c` to display name, `u` to product-URL base, `i` to source logo URL, and `d` to products. Map product `n` to name, `l` to canonical relative source path, `p` to numeric euro price, and `s` to package text. Build the product URL from `u + l`, and convert `p` to safe integer cents with a tested decimal-rounding helper rather than carrying floating-point euros into operations.
+- Derive deterministic offer IDs from retailer and canonical source path; never use array positions.
 
-Normalize search text with Unicode NFKD, diacritic removal, lowercase, punctuation-to-space, and collapsed whitespace. Maintain a small reviewed English-Dutch grocery alias map in `aliases.ts`; do not call an LLM. Parse common package strings including Dutch decimal commas, `6 x 0,33 l`, `800 g`, `20 stuks`, and `per stuk/pakket` into `g`, `ml`, `each`, or `unknown`.
+Normalize search text with Unicode NFKD, diacritic removal, lowercase, punctuation-to-space, and collapsed whitespace. Maintain a small reviewed English-Dutch grocery alias map in `aliases.ts`; never call an LLM. Parse common package strings including Dutch decimal commas, `6 x 0,33 l`, `800 g`, `20 stuks`, and `per stuk/pakket` into `g`, `ml`, `each`, or `unknown`.
 
-For search, index each offer summary under the first three characters of each unique normalized token, or the whole token when it has exactly two characters. Hash that prefix with a documented stable 32-bit FNV-1a function into 128 physical shards. The query chooses the longest normalized/aliased token as its anchor, reads no more than three distinct index shards, filters candidates against all normalized query tokens, and ranks deterministically. Store enough summary data in the index shard to return search/basket results without an additional offer-shard read. Offer shards exist for direct history/watch lookup.
+Index each offer summary under the first three characters of each unique normalized token, or the whole token when it has two characters. Hash that prefix with documented stable 32-bit FNV-1a into 128 physical shards. Normalize reviewed aliases before choosing one longest token as the query anchor, read exactly that one index shard, filter candidates against all normalized query tokens, and rank deterministically. Each index record contains every field required by search and basket output; there are no separate offer, history, drop, or metadata objects.
 
-Expose the deep seam:
+Expose narrow seams:
 
 ```ts
 interface CatalogObjectStore {
@@ -326,159 +311,193 @@ interface CatalogObjectStore {
 interface GroceryCatalog {
   search(...): Promise<...>;
   planBasket(...): Promise<...>;
-  findPriceDrops(...): Promise<...>;
-  getPriceHistory(...): Promise<...>;
+}
+
+interface ShoppingListService {
+  get(listKey: string): Promise<...>;
+  create(listKey: string, document: ShoppingListDocument): Promise<...>;
+  replace(listKey: string, document: ShoppingListDocument): Promise<...>;
 }
 ```
 
-Implement `MemoryCatalogObjectStore` for tests, `R2CatalogObjectStore` for local/self-hosted reads, and `HttpCatalogObjectStore` for the official custom-domain/Tiered Cache path. Keep these in `mcp-groceries`; do not introduce a generic storage package.
+Implement `MemoryCatalogObjectStore` for tests and `R2CatalogObjectStore` for every deployed mode. Do not introduce a generic storage package or HTTP catalog adapter.
+
+## Durable Object contract
+
+Use one `ShoppingListObject` per valid capability with `env.SHOPPING_LISTS.getByName(listKey)`. Configure the class with `new_sqlite_classes`, extend `DurableObject<CloudflareBindings>`, and expose RPC methods only.
+
+Store one validated envelope under the constant storage key `shopping-list` using the Durable Object storage `get`, `put`, and `delete` APIs. The envelope is `{ document, savedAt, expiresAt }`; `document` is exactly the public bounded list schema. On a SQLite-backed Durable Object these key/value methods use Cloudflare's hidden SQLite storage, so do not create an application table, SQL schema, schema migration, child row, index, or constructor initializer.
+
+Expose separate `create` and `replace` RPC methods even though the public tool is named `save_shopping_list`. `create` requires the storage key to be absent; `replace` requires it to exist and be unexpired. Supplying a validly formatted but unknown/expired `listKey` to the public save operation returns the same stable unknown-list error as get; only omitting the key creates state. Durable Object storage input gates serialize the read/write sequence. Last-write-wins applies to two valid replacements; there is no revision check.
+
+After a successful create or replacement, set one alarm for 90 days after `savedAt`. A save extends expiry; a read does not. `get` checks `expiresAt` and treats an expired document as unknown even if its alarm was delayed, deleting the one storage key as cleanup. `alarm()` idempotently deletes the `shopping-list` key and the alarm. Do not call `deleteAll`, add per-line alarms, or schedule repeating work.
+
+Generate new list keys from 16 bytes of `crypto.getRandomValues`, base64url without padding, prefixed with `lst_`. Validate the fixed format before obtaining a DO stub. Return the key only in successful list results, never in errors or Stamppot-controlled logs. There is no list enumeration or client/chat mapping.
+
+Before `save_shopping_list`, call one `SHOPPING_LIST_WRITES` Rate Limiting binding configured for 30 saves per 60 seconds. For an existing list, derive a SHA-256 base64url limiter key from `listKey` plus a constant namespace. For creation, derive it from `CF-Connecting-IP` plus a different constant because no stable user identifier exists yet; use one fixed anonymous fallback only in local/test environments where that header is absent. Never log either key or its source. Document that IP-based creation limiting can group users behind Claude or another proxy and that Cloudflare's limiter is approximate and per location; it is an abuse brake, not authorization or accounting.
 
 ## Steps
 
-### Step 1: Record the storage and capability decisions
+### Step 1: Record the reduced architecture decision
 
-Create `docs/decisions/groceries-storage.md` and `docs/decisions/anonymous-shopping-lists.md` before code. Include the decisions and rejected alternatives above, data ownership, retention, failure behavior, cache topology, capability threat model, rate-limit limitations, and migration triggers. Update only the persistence/authentication paragraphs in `docs/research/mcp-worker-architecture.md` so they no longer imply that every state handle requires an account.
+Create `docs/decisions/groceries.md`. Record the four-tool scope, direct private R2 binding, immutable current catalog with no v1 deletion/lifecycle machinery, one-document list capability, last-write-wins replacement, 90-day expiry, rate-limit limitations, resource-ownership boundary, and the explicit deferrals listed above. Include the measured source/artifact rationale from the previous investigation: roughly 105,000 offers and a 128-shard prototype around 38.4 MB uncompressed, with approximately 300 KB average and 764 KB maximum shards. State the roughly 14 GB/year retention trade-off and current-price-only public contract.
 
-The capability decision must say plainly: this is “authless” in the product sense of no signup/OAuth, but the random `listKey` is still a bearer capability; anyone who obtains it can read or modify that one list. Stamppot must never place it in URLs, R2, server-controlled analytics, structured logs, or error messages. It necessarily appears in normal MCP tool arguments/results, and Hermes, OpenClaw, Claude, or their operators may retain those conversations/tool records under their own policies. Rotation/recovery, automatic client association, and cross-device discovery do not exist in v1.
+Update only the stale current-state and state/auth paragraphs in `docs/research/mcp-worker-architecture.md`: record the already-shipped `responseMode: "auto"`, the planned stateless legacy lane and 64 KiB MCP ingress, and that MCP remains stateless while anonymous application state may use a bearer capability without an account. Possession authorizes one document. State plainly that the capability appears in tool arguments/results and may be retained by third-party clients under their own policies, while Stamppot never places it in URLs, R2, logs, analytics, or errors.
 
-**Verify**: `rg -n "R2|Tiered Cache|Durable Object|capability|D1" docs/decisions docs/research/mcp-worker-architecture.md` → both new decisions contain the chosen architecture, the research doc acknowledges capability-held state, and no document claims Cache API provides Tiered Cache.
+Update `SECURITY.md` so the hosted posture is “authless and bounded,” not universally read-only: catalog/search/planning remain read-only; the only mutation is a whole-document list save authorized by an unguessable capability, capped and rate-limited. Keep the existing private-reporting and secret-handling guidance. Do not describe `listKey` as authentication to an account.
 
-### Step 2: Make MCP descriptors agent-friendly and scaffold the package
+**Verify**: `rg -n "four|R2|Durable Object|capability|last-write-wins|deferred|D1|Tiered Cache|authless|64 KiB" docs/decisions/groceries.md docs/research/mcp-worker-architecture.md SECURITY.md` → the documents contain the selected topology, ingress boundary, and limitations; no document claims price alerts or CDN caching ship in v1.
 
-In `packages/core/src/index.ts`, add optional operation annotations as part of the operation interface/description and carry them through `defineOperation`. Keep the core module independent of the MCP package by defining the four boolean hint fields locally. In `packages/mcp-adapter/src/index.ts`, forward annotations to `registerTool` and change only `legacy: "reject"` to `legacy: "stateless"`. Keep `responseMode: "auto"`; do not add protocol sessions, a transport Durable Object, or deprecated standalone SSE.
+### Step 2: Harden authless MCP ingress, enable stateless clients, and scaffold four tools
 
-Extend `test/core.test.ts` to prove annotations survive definition/description. Create `test/mcp-adapter.test.ts` to prove `tools/list` exposes annotations and nested property descriptions and that ordinary calls work through both the current 2026 protocol and the stateless 2025 compatibility lane. Each lane must use a fresh request/client sequence, call a read operation twice, and require no MCP session ID. These are transport/descriptor tests, not live Hermes/OpenClaw/Claude tests.
+In `packages/mcp-adapter/src/index.ts`, change `legacy: "reject"` to `legacy: "stateless"` and keep `responseMode: "auto"`. Add one 64 KiB JSON-body limit for MCP POST requests. Before reading the body, apply the installed MCP server package's exported Host/Origin validation helpers with the same localhost/workers.dev/custom-domain defaults already used by the Agents wrapper; then parse once and call the returned handler's `.fetch(request, { parsedBody })` path, which repeats its own policy checks and avoids rereading the body. Stamppot is authless, so there is no verified OAuth execution context to preserve through the callable-only path. Keep OPTIONS and non-POST behavior delegated to the handler. Return JSON-RPC parse error `-32700` with HTTP 400 for malformed JSON and a stable JSON-RPC error with HTTP 413 for a body over the limit; both use `id: null` and echo no body content. In the tool callback catch, replace raw exception text with exactly `Error: Tool invocation failed`. Do not log the raw exception or input here, and do not add sessions, annotation plumbing, a transport Durable Object, Hono, or deprecated standalone SSE.
 
-Create `packages/mcp-groceries/package.json` matching `packages/mcp-calendar/package.json`: private ESM package at `0.1.0`, `.` export for `src/index.ts`, plus explicit `./cloudflare` and `./catalog-build` exports. Depend only on `@stamppot/core`, `zod`, and platform APIs already provided by the Worker runtime. Add `@stamppot/mcp-groceries` as a workspace dependency of `apps/edge` and as a root dev dependency for tests.
+Create `test/mcp-adapter.test.ts` to drive fresh current-2026 and stateless-2025 request sequences. Each lane lists tools and calls a read operation twice without an MCP session ID. Also assert that nested `.describe()` text reaches `tools/list`, an oversized declared or streamed body is rejected at 64 KiB, malformed JSON is stable, an invalid Origin wins before parsing, and an operation throwing a secret sentinel returns only the generic failure text. These are transport/descriptor tests, not live third-party-client tests.
 
-In `contracts.ts` and `catalog-format.ts`, define Zod schemas and inferred types for the seven tool contracts, manifest/artifact format, offers, quantities, histories, and list mutations. Use integer cents everywhere; reject negative/unsafe integers, unknown retailer counts over 12, arrays over their documented caps, and unrecognized units. Export named constants for all caps and `CATALOG_FORMAT_VERSION`.
+Create `packages/mcp-groceries/package.json` matching `packages/mcp-calendar/package.json`: private ESM package at `0.1.0`, `.` export for `src/index.ts`, and explicit `./cloudflare` and `./catalog-build` exports. The Cloudflare entry re-exports the R2 adapter, list service/limiter adapters, and `ShoppingListObject`; the root entry remains transport/platform-neutral. Depend only on `@stamppot/core`, `zod`, and Worker platform APIs. Add it as a workspace dependency of `apps/edge` and root dev dependency for tests.
 
-Add the seven `content/*.md` files now, following `packages/mcp-calendar/content/get_dutch_time.md`. Each needs valid YAML frontmatter, one H1, agent-oriented examples, related tool names, source/license/freshness/error behavior, and the hosted `/mcp/groceries` route. Add package README sections for consumer use, source provenance, exact tools, self-hosting link, and capability warning.
+In `contracts.ts` and `catalog-format.ts`, define Zod schemas and inferred types for the four tool contracts, manifest/shards, offers, quantities, and the one shopping-list document. Use integer cents; reject negative/unsafe values, arrays beyond documented caps, retailer filters over 12, and unknown units. Export named constants for all caps and `CATALOG_FORMAT_VERSION`.
 
-Create initial schema/normalization tests in `test/groceries-catalog.test.ts` before implementation. Add `tsx` as a pinned root development dependency through the workspace catalog so the later TypeScript sync CLI can run without duplicating builder logic. Use `pnpm add -Dw tsx`, then move the resolved exact version into `pnpm-workspace.yaml`'s catalog and set the root dependency to `catalog:` before committing the lockfile.
+In `operations.ts`, create exactly four inline `defineOperation({ ... })` calls with their final literal names, schemas, descriptions, and dependency-delegating execute functions. Define the narrow `GroceryCatalog`, `ShoppingListService`, key generator, and write-limiter contracts they call; these seams can be supplied by deterministic fakes before the R2/DO implementations exist. Do not return placeholder data or throw “not implemented.” In `index.ts`, export `createGroceriesMcp(dependencies)` and its `defineMcp` result. This structure is required now because `check:mcp-content` rejects content without matching inline operation definitions.
 
-**Verify**: `pnpm install && pnpm check:mcp-content && pnpm exec vitest run test/core.test.ts test/mcp-adapter.test.ts test/groceries-catalog.test.ts` → install and content checks pass; annotations/descriptors and both stateless protocol lanes pass; schema tests pass; exactly seven grocery operation content files are validated.
+Add exactly four content files, following `packages/mcp-calendar/content/get_dutch_time.md`, and a package README. Each content file needs valid YAML frontmatter, one H1, agent-oriented examples, related tool names, source/licence/freshness/error behavior, and `/mcp/groceries`. The README covers the four tools, source, saved-list capability, and self-hosting link.
 
-### Step 3: Build deterministic immutable catalog artifacts and the sync CLI
+Add a pinned `tsx` version to the workspace catalog and root dev dependencies so the sync CLI can reuse TypeScript builder code. Add initial schema/normalization tests in `test/groceries-catalog.test.ts` before implementation.
 
-Implement pure builder functions in `catalog-build.ts` and the format/normalizer/package parser in `catalog-format.ts` and `aliases.ts`. Add a small legally redistributable upstream-shaped fixture at `packages/mcp-groceries/fixtures/checkjebon-small.json`; it must contain synthetic names/prices, not a large copied production snapshot.
+Add `scripts/**/*.ts` to `tsconfig.node.json` so `pnpm typecheck` covers the catalog CLI. Do not create a second script-specific compiler configuration.
 
-Implement `scripts/groceries-catalog.ts` as a `tsx` CLI with these modes:
+**Verify**: `pnpm install && pnpm check:mcp-content && pnpm exec vitest run test/mcp-adapter.test.ts test/groceries-catalog.test.ts` → the lockfile installs, both protocol lanes pass, nested schema descriptions are present, schema tests pass, and exactly four grocery content files validate.
+
+### Step 3: Build current immutable catalog artifacts and sync CLI
+
+Implement pure builder functions in `catalog-build.ts` and format/normalization/package parsing in `catalog-format.ts` and `aliases.ts`. Add a small upstream-shaped fixture at `packages/mcp-groceries/fixtures/checkjebon-small.json` with synthetic names and prices rather than a production snapshot.
+
+Implement `scripts/groceries-catalog.ts` as a `tsx` CLI:
 
 ```text
 pnpm groceries:sync --local --if-empty
-pnpm groceries:sync --remote --bucket <explicit-name>
+pnpm groceries:sync --remote --bucket <explicit-name> --jurisdiction eu
 pnpm groceries:sync --build-only --source <fixture-or-url> --output <directory>
 ```
 
-Add root scripts `groceries:sync` and `predev` where `predev` runs the local `--if-empty` form. The CLI may fetch the documented Checkjebon URL only outside tests. It builds in an OS temporary directory, validates schema/counts/hashes, reads prior history when available, uploads with bounded concurrency by spawning Wrangler with argument arrays and `shell: false`, and publishes the manifest last. Never interpolate a source URL, bucket name, object key, or path into a shell command. An unchanged source hash exits successfully without publishing a new version.
+Add root scripts `groceries:sync` and `predev`, where `predev` runs local `--if-empty`. The CLI may fetch the documented Checkjebon URL only outside tests. It builds in an OS temporary directory, validates schemas/counts/hashes, and uploads with bounded concurrency by spawning Wrangler with argument arrays and `shell: false`. Never interpolate source URLs, bucket names, keys, or paths into a shell command. Upload version objects first and replace the manifest last. Every successful remote sync publishes a version with its new observation timestamp even when source content is unchanged, keeping freshness truthful. Repeating a build with the same source and injected observation time remains byte-for-byte deterministic. Do not list or delete remote objects.
 
-Keep the builder independent from Wrangler behind a publisher interface. In `test/groceries-sync.test.ts`, use an in-memory recording publisher to prove deterministic keys/content, manifest-last ordering, malformed/empty rejection, unchanged-hash no-op, one history event for one price change, no event for unchanged price, and 90-day trimming. Tests must never make a live request or run remote Wrangler.
+Keep publishing behind an interface. In `test/groceries-sync.test.ts`, use an in-memory recording publisher to prove deterministic objects for a fixed clock, strict malformed/empty rejection, a new observed version on a later clock even when prices are unchanged, manifest-last ordering, and publication failure leaving the previous manifest live. Assert the publisher has no list/delete cleanup path. There is no price-history read, change-event generation, deletion, or production network access in tests.
 
-**Verify**: `pnpm exec vitest run test/groceries-catalog.test.ts test/groceries-sync.test.ts` → all parser, normalizer, sharding, determinism, validation, ordering, and history cases pass. Then create an OS temp directory with `groceries_artifact_dir="$(mktemp -d)"` and run `pnpm groceries:sync --build-only --source packages/mcp-groceries/fixtures/checkjebon-small.json --output "$groceries_artifact_dir"` → exits 0 and prints version, object count, offer count, and manifest hash without changing the worktree.
+**Verify**: `pnpm exec vitest run test/groceries-catalog.test.ts test/groceries-sync.test.ts` → builder, sharding, determinism, validation, and ordering cases pass. Then run `groceries_artifact_dir="$(mktemp -d)" && pnpm groceries:sync --build-only --source packages/mcp-groceries/fixtures/checkjebon-small.json --output "$groceries_artifact_dir"` → exit 0 and print version, object count, offer count, and manifest hash without changing the worktree.
 
-### Step 4: Implement bounded search, price history, drops, and basket pricing
+### Step 4: Implement bounded search and basket pricing
 
-Implement the three `CatalogObjectStore` adapters and `GroceryCatalog` in `catalog.ts`; Cloudflare adapters belong in `cloudflare.ts`. The HTTP adapter accepts only a configured base URL plus internally generated catalog keys. Do not accept a base URL or arbitrary object key from tool input. Check `response.ok`, cap object size before JSON parsing where the runtime API permits, validate decoded JSON with the artifact schemas, propagate the request abort signal, and return stable domain errors for stale/missing/corrupt catalogs.
+Implement `MemoryCatalogObjectStore`, `R2CatalogObjectStore`, and `GroceryCatalog`; place the R2 adapter in `cloudflare.ts`. Check missing/object-size cases before JSON parsing where the runtime API permits, validate every decoded object with artifact schemas, propagate abort signals, and return stable errors for missing or corrupt catalogs. Do not add an HTTP store. A catalog older than 48 hours remains usable but returns `freshness: "stale"`; a newer one returns `freshness: "fresh"`. Do not turn a missed sync into total tool failure.
 
-Implement the first four read operations and the planner in `operations.ts`. `createGroceriesMcp({ catalog, shoppingLists, createListKey, writeLimiter })` closes over interfaces; it performs no I/O at module construction time. Make ranking and tie-breaking deterministic. Limit any one query to three distinct index shard fetches; deduplicate shard reads across a basket. Keep no request-specific mutable state at module scope.
+Complete the catalog-backed behavior delegated by `find_grocery_options` and `plan_grocery_basket`. `createGroceriesMcp({ catalog, shoppingLists, createListKey, writeLimiter })` performs no I/O during construction. Make ranking and tie-breaking deterministic. Resolve one current `CatalogSnapshot` per operation and deduplicate shard reads across a basket. Build `replayInput` from validated input plus explicit defaults; do not include a version, store a quote, or allocate state.
 
-Change the catalog seam so a basket resolves one `CatalogSnapshot` from either the supplied `catalogVersion` or the current manifest before evaluating any line. All reads for that quote use that snapshot. Build `replayInput` from the validated request plus explicit defaults and the resolved version; do not store it or allocate a quote object. This is the depth-producing seam: callers learn one replayable input while manifest lookup, pinning, package arithmetic, store enumeration, and deterministic ordering stay inside the module.
+Use this exact party-pricing oracle in the synthetic fixture and basket test; it verifies orchestration and arithmetic, not nutritional or serving advice:
 
-In `test/groceries-catalog.test.ts`, cover:
+```json
+{
+  "lines": [
+    { "query": "cola", "target": { "value": 12, "unit": "l" } },
+    { "query": "crisps", "target": { "value": 2, "unit": "kg" } },
+    { "query": "flour", "target": { "value": 1, "unit": "kg" } },
+    { "query": "sugar", "target": { "value": 500, "unit": "g" } },
+    { "query": "butter", "target": { "value": 500, "unit": "g" } },
+    { "query": "eggs", "target": { "value": 12, "unit": "each" } },
+    { "query": "paper plates", "target": { "value": 30, "unit": "each" } },
+    { "query": "napkins", "target": { "value": 40, "unit": "each" } }
+  ],
+  "budgetCents": 5000,
+  "retailerSlugs": ["ah", "jumbo"],
+  "maxStores": 3
+}
+```
 
-- stable normalization, alias expansion, FNV-1a sharding, and offer IDs;
-- decimal commas, multipacks, grams/litres, pieces, and unknown package strings;
-- `shampoo` search where checkout-price and unit-value winners differ;
-- refusal to compare incompatible/unknown units;
-- deterministic ties, retailer filters, malformed artifacts, stale manifest, and no-result behavior;
-- drops and 90-day change-only history, including unavailable offers;
-- store/fetch counters proving a single search reads at most one manifest plus three index shards.
+| Line | AH package / price / rounded line | Jumbo package / price / rounded line |
+|---|---:|---:|
+| cola | 1.5 l / €2.40 / 8 = €19.20 | 2 l / €2.80 / 6 = €16.80 |
+| crisps | 250 g / €2.00 / 8 = €16.00 | 300 g / €2.10 / 7 = €14.70 |
+| flour | 1 kg / €1.00 / 1 = €1.00 | 1 kg / €1.60 / 1 = €1.60 |
+| sugar | 1 kg / €1.40 / 1 = €1.40 | 750 g / €1.10 / 1 = €1.10 |
+| butter | 250 g / €2.50 / 2 = €5.00 | 500 g / €4.80 / 1 = €4.80 |
+| eggs | 6 each / €2.40 / 2 = €4.80 | 12 each / €4.20 / 1 = €4.20 |
+| paper plates | 20 each / €1.50 / 2 = €3.00 | 30 each / €3.50 / 1 = €3.50 |
+| napkins | 40 each / €2.20 / 1 = €2.20 | 20 each / €0.90 / 2 = €1.80 |
 
-In `test/groceries-basket.test.ts`, cover calls with no client IDs, one-based line correlation, omitted-target one-package behavior, package ceiling arithmetic, one-store versus up-to-three-store results, optional and unmatched lines, explicit partial totals, budget deltas, incompatible units, deterministic combination ties, maximum input bounds, and the 16-adult/6-child party fixture. Assert no more than one manifest plus 20 unique index-shard reads for a maximum basket. Call once without a version, call again with the returned `replayInput` after advancing the manifest, and assert the pinned selections/totals remain identical. Then remove `catalogVersion` and assert the result intentionally refreshes. Cover `catalog_version_unavailable` after retention. Assert `replayInput` itself passes the operation's input schema.
+The fixture contains no other matching offers. Assert `bestSingleStore` is Jumbo at exactly 4,850 cents with 150 cents remaining, while `cheapestWithinStoreLimit` uses Jumbo for six lines and AH for flour and paper plates, totals exactly 4,740 cents across two stores, and has 260 cents remaining. Both plans price all eight required lines and are complete. Assert the selected package counts shown in the table, not just the totals.
 
-**Verify**: `pnpm exec vitest run test/groceries-catalog.test.ts test/groceries-basket.test.ts` → all named cases pass, including fetch-count assertions and the party cost result.
+In `test/groceries-catalog.test.ts`, cover stable normalization, alias expansion, FNV-1a sharding, offer IDs, decimal commas, multipacks, grams/litres/pieces, unknown packages, shampoo checkout-price versus volume-unit winner, mass/volume/each winner separation, exact-ratio ranking before display rounding, deterministic ties, retailer filters, corrupt/missing data, 48-hour stale-but-usable marking, no results, and exactly one manifest plus one shard read for search.
 
-### Step 5: Add the anonymous shopping-list Durable Object
+In `test/groceries-basket.test.ts`, cover no caller IDs, line-number correlation, omitted-target one-package behavior, ceiling arithmetic, one-store versus up-to-three-store results, optional and unmatched lines, partial totals, budget deltas, incompatible units, deterministic ties, maximum input bounds, and the 16-adult/6-child party fixture. Assert no more than one manifest plus 20 unique shard reads. Assert `replayInput` passes the input schema and can be resent after the manifest advances, producing a current-version response without a historical-version error or guarantee of identical prices.
 
-Implement a narrow `ShoppingListService` interface and `ShoppingListObject` in `shopping-list-object.ts`. Extend `DurableObject<CloudflareBindings>` from `cloudflare:workers`; expose RPC methods only. Use `ctx.blockConcurrencyWhile` only to create/migrate SQLite tables. Track migrations in a `_sql_schema_migrations` table; do not use `PRAGMA user_version`.
+**Verify**: `pnpm exec vitest run test/groceries-catalog.test.ts test/groceries-basket.test.ts` → all named cases pass, including read bounds and the party total.
 
-Use one object per valid capability with `env.SHOPPING_LISTS.getByName(listKey)`. Store normalized list rows, watches, metadata, `revision`, and `expiresAt`. Related SQL writes and the revision increment must be synchronous SQL statements in one turn with no `await` between them. Every update to an existing list checks `expectedRevision`; the entire mutation batch either applies or returns a conflict. Enforce caps inside the object, not only at Zod ingress.
+### Step 5: Add the one-document shopping-list Durable Object
 
-On successful mutation, set one expiry alarm 90 days after that mutation. Reads must not write or extend TTL. `alarm()` deletes all application rows and the alarm; the object then behaves as unknown/expired. Do not schedule alarms for individual watches.
+Implement `ShoppingListService` and `ShoppingListObject` in `shopping-list-object.ts` according to the Durable Object contract above. Use RPC methods and one storage key on a SQLite-backed class; write no application SQL. Store schema-validated JSON, no relational child rows, no revision, and no catalog data. Enforce the 20-line, field, quantity, budget, and 16 KiB serialized-document caps inside the object as well as at Zod ingress.
 
-Before any create or update RPC, call a `SHOPPING_LIST_WRITES` Workers Rate Limiting binding. Use a privacy-safe key derived from `CF-Connecting-IP` plus a constant operation namespace; never log the key. Configure 30 writes per 60 seconds. Return a stable retryable rate-limit error. Document that this limiter is approximate and per Cloudflare location, not an accounting or security boundary.
+Await every storage operation. A create refuses an existing document; a replacement refuses a missing or expired document; successful writes update timestamps and the single expiry alarm. An expired read deletes the one key and returns the stable unknown-list result; `alarm()` idempotently deletes the key. Do not add `blockConcurrencyWhile`, a constructor migration, `deleteAll`, or authoritative in-memory-only state.
 
-Generate new list keys from 16 bytes of `crypto.getRandomValues`, base64url without padding, prefixed with `lst_`. Generate persisted `lineId` and `watchId` values server-side. Validate fixed formats before obtaining a DO stub. Return the key only in successful shopping-state results, never in errors or Stamppot-controlled logs. There is no operation to enumerate lists and no mapping from an MCP connection/client to a list.
+In `operations.ts`, generate new list keys with Web Crypto only when creation is requested, call the limiter before every save, validate capabilities before obtaining a stub, and keep errors capability-free. `get_shopping_list` returns only stored state. `save_shopping_list` replaces it completely and returns the full canonical result.
 
-Test in `test/groceries-state.test.ts` with `cloudflare:test` helpers such as `runInDurableObject` and `runDurableObjectAlarm`: creation/roundtrip, 128-bit key format, server-generated persisted line/watch IDs, isolation, atomic multi-mutation, revision conflict/recovery instruction, retry of an already-applied update producing a conflict rather than a duplicate line, caps, 64 KiB guard, reads not extending TTL, mutation extending TTL, alarm deletion, watch evaluation, and rate-limit failure. Open a fresh MCP request sequence and retrieve the list using only the previously returned `listKey`; this proves persistence is independent of MCP connection state. Use isolated storage per test and injected deterministic identifiers only at the operation seam, not inside production crypto.
+Test with `cloudflare:test`, `runInDurableObject`, and `runDurableObjectAlarm`: creation/roundtrip, exactly one application storage key, 128-bit key format, replacement semantics, rejection of replacement through unknown/expired keys, empty and 20-line documents, schema caps, isolation, last-write-wins, reads not extending expiry, saves extending expiry, delayed-alarm expired reads, idempotent alarm deletion, stable unknown-capability errors, and rate-limit failures. Open a fresh MCP request sequence and retrieve using only the returned `listKey`.
 
-**Verify**: `pnpm cf-typegen && pnpm exec vitest run test/groceries-state.test.ts` → generated types include `SHOPPING_LISTS` and `SHOPPING_LIST_WRITES`; all state, concurrency, expiry, and limiter cases pass.
+**Verify**: `pnpm cf-typegen && pnpm exec vitest run test/groceries-state.test.ts` → generated types include `SHOPPING_LISTS` and `SHOPPING_LIST_WRITES`; all one-document, expiry, isolation, and limiter cases pass.
 
-### Step 6: Wire Cloudflare bindings and all public routes
+### Step 6: Wire Cloudflare bindings and public routes
 
 Update `apps/edge/wrangler.jsonc` with:
 
-- R2 binding `GROCERIES_CATALOG` and an explicit bucket name suitable for the checked-in official deployment config;
-- text var `GROCERIES_CATALOG_BASE_URL`, using an empty string to select direct binding by default;
+- private R2 binding `GROCERIES_CATALOG` with `bucket_name: "stamppot-groceries-catalog"` and `jurisdiction: "eu"`; bucket names are account-scoped, so another Cloudflare account can create the same checked-in name;
 - Durable Object binding `SHOPPING_LISTS` for exported class `ShoppingListObject`;
-- first SQLite migration tag `v1` with `new_sqlite_classes`;
-- rate-limit binding `SHOPPING_LIST_WRITES`, limit 30/60 and a repository-specific numeric namespace ID. Prefix runtime limiter keys so accidental namespace reuse with another MCP cannot share counters.
+- migration tag `v1` with `new_sqlite_classes: ["ShoppingListObject"]`;
+- `SHOPPING_LIST_WRITES` rate-limit binding with `namespace_id: "1763268921"`, limit 30, and period 60. Namespace IDs are account-wide positive integers; this checked-in project value needs no separate resource creation, but a self-hoster must replace it if their account already uses it. Keep the operation prefixes in runtime keys so counters cannot accidentally overlap.
 
-Run `pnpm cf-typegen` and use only generated `CloudflareBindings`; never hand-write `Env`. In `apps/edge/src/worker.ts`, import the environment binding from `cloudflare:workers` or otherwise construct dependency adapters lazily without I/O. Capturing an immutable binding reference at module scope is allowed; request/list/catalog mutable state is not. Export `ShoppingListObject`, add `groceriesMcp` to the combined registry, add a domain handler at `/mcp/groceries`, and keep `/mcp`, `/v1/tools/*`, sitemap, landing, and generated tool pages on their existing shared paths.
-
-When `GROCERIES_CATALOG_BASE_URL` is non-empty, use `HttpCatalogObjectStore`; otherwise use `R2CatalogObjectStore`. Do not put the capability in a URL and do not log MCP/HTTP tool inputs or outputs in Stamppot. Keep CORS and stable error-envelope behavior consistent with existing adapters.
+Use only generated `CloudflareBindings`; never hand-write an environment interface. In `apps/edge/src/worker.ts`, import the platform adapters and `ShoppingListObject` from `@stamppot/mcp-groceries/cloudflare`, construct dependencies lazily from `cloudflare:workers` bindings without I/O, re-export the class for Wrangler, add groceries to the combined registry, and add `/mcp/groceries`. Keep `/mcp`, `/v1/tools/*`, sitemap, landing, and generated tool pages on existing shared paths. Do not log tool inputs/outputs or list capabilities.
 
 Add `test/groceries-worker.test.ts` to prove:
 
-- `/mcp/groceries` lists exactly the seven tools;
-- `/mcp` lists calendar plus groceries;
-- `tools/list` exposes self-contained nested property descriptions and correct read-only/idempotency annotations for the planner;
-- planner calls return schema-conforming `structuredContent` plus the existing serialized text fallback, and both include `replayInput`;
-- `/v1/tools/find_grocery_options` and `/v1/tools/plan_grocery_basket` return fixture-backed results;
-- two `plan_grocery_basket` calls work on fresh stateless 2025 and 2026 MCP request sequences, with no caller line IDs and the second call using `replayInput`;
-- list creation/update/read works across fresh MCP request sequences using the returned `listKey`, without putting it in a URL;
-- invalid input, unknown capability, revision conflict, stale/corrupt catalog, and rate limit use stable non-secret errors;
-- landing Markdown/HTML, tool pages, and sitemap include grocery tools without edits under `apps/edge/src/landing/**`.
+- `/mcp/groceries` lists exactly four tools and `/mcp` lists calendar plus groceries;
+- `tools/list` exposes complete nested field descriptions;
+- planner calls return schema-conforming `structuredContent` plus serialized text, including unpinned `replayInput`;
+- plain HTTP search and planner routes return fixture-backed results;
+- two planner calls work in fresh 2025 and 2026 stateless sequences without caller IDs;
+- list create/save/get works across fresh sequences using the returned `listKey` and get performs no R2 read;
+- invalid input, unknown capability, corrupt/missing catalog, and rate limit use stable non-secret errors, while stale catalog data remains usable and visibly marked;
+- injected dependency failures containing a secret sentinel expose it in neither HTTP/MCP responses nor captured Stamppot-controlled logs;
+- generated landing Markdown/HTML, tool pages, and sitemap include four grocery tools without edits under `apps/edge/src/landing/**`.
 
-The Worker test environment must use local R2/DO bindings and deterministic fixture publication. It must not fetch the production custom domain.
+Tests use local R2/DO bindings and deterministic fixture publication; they never fetch the production source.
 
-**Verify**: `pnpm exec vitest run test/groceries-worker.test.ts test/worker.test.ts` → new and existing Worker/MCP/landing route tests pass. `git diff --name-only -- apps/edge/src/landing DESIGN.md` → no output.
+**Verify**: `pnpm exec vitest run test/groceries-worker.test.ts test/worker.test.ts` → new and existing route tests pass. `git diff --name-only -- apps/edge/src/landing DESIGN.md` → no output.
 
-### Step 7: Make clone-and-run and hosted operation explicit
+### Step 7: Document clone-and-run, schedule sync, and release
 
-Implement `scripts/setup-self-hosted.mjs` as an interactive but scriptable bootstrap. It must use `spawn` with argument arrays and `shell: false`, check `wrangler whoami`, ask for or accept an explicit Worker/bucket name, create an EU-jurisdiction R2 bucket only after confirming it does not exist, update the Wrangler binding through supported Wrangler options where possible, sync the catalog, deploy the Worker including the DO migration, and print the combined and groceries MCP URLs. Add `--dry-run` that prints redacted commands and performs no writes; tests/CI exercise only this mode. Never overwrite an existing bucket or config silently.
+Write `docs/runbooks/groceries-self-hosting.md` with copy-paste paths only; do not create a setup script.
 
-Write `docs/runbooks/groceries-self-hosting.md` with two paths:
+1. **Local development**: clone, `pnpm install`, `pnpm dev`. Explain that `predev` populates local R2 only when empty and that normal tests use fixtures.
+2. **Self-hosted Cloudflare**: authenticate with Wrangler, create the checked-in bucket name in the `eu` jurisdiction, run the remote catalog sync, build, and deploy the Worker so its Durable Object migration applies. State which commands mutate remote state and require operator confirmation. Explain how to choose a different Worker/bucket name and how to replace the rate-limit namespace integer if it collides in that Cloudflare account; these are the only checked-in identity fields a typical clone may need to edit.
+3. **Official operation**: create the same private bucket before merging/deploying, provide a token with Cloudflare's bucket-scoped `Workers R2 Storage Bucket Item Write` permission plus the account variable used by catalog sync, and ensure the existing deployment token can bind the bucket and deploy the Durable Object migration. No delete/list implementation, lifecycle rule, custom domain, or public access is involved.
 
-1. **Minimum self-hosted path:** clone, `pnpm install`, `pnpm setup:self-hosted`; direct R2 binding, no custom domain, no D1, DO migration included by deploy.
-2. **Official/optimized path:** dedicate a public bucket containing only publishable catalog artifacts; attach an R2 custom domain; create Cache Everything rules because JSON is not cached by default; set 60-second TTL for `catalog/manifest.json` and one-year TTL for `catalog/versions/*`; enable Smart Tiered Cache; set `GROCERIES_CATALOG_BASE_URL`; configure a 30-day R2 version lifecycle; provision GitHub variables/secrets for daily sync; verify without exposing credentials.
+Add `.github/workflows/groceries-catalog-sync.yml` with daily schedule and manual dispatch. Install with the frozen lockfile and run the remote sync using account ID/bucket settings from GitHub variables and an R2-write-scoped token from a secret. Give it only `contents: read` and prevent overlapping publishes. Do not alter `.github/workflows/ci.yml` or add literal credentials.
 
-Explain reuse: the same public grocery catalog bucket/custom-domain artifact may serve future recipe or meal-planning MCPs, but consumers must go through the versioned format/interface rather than inventing ad-hoc keys. Do not share its bucket with unrelated MCP data or any private state. Durable Object namespaces should be owned by the application/state domain; do not reuse this shopping-list namespace for unrelated MCPs.
+Update the root README with `/mcp/groceries`, four tools, the source, and Hermes/OpenClaw/Claude usage. Include a birthday example that calls the planner without an ID and refines by resending `replayInput`; say results may refresh when prices change. Separately show create/get/save list calls and state that clients/users must retain `listKey`, call get before full replacement, and cannot recover it after context loss.
 
-Add `.github/workflows/groceries-catalog-sync.yml` with daily schedule and manual dispatch. It installs with the frozen lockfile and runs the remote sync using a bucket name/account ID from GitHub variables and an R2-write-scoped token from a GitHub secret. Give the workflow only `contents: read`; use concurrency to prevent overlapping publishes. Update `.github/workflows/ci.yml` only as needed to replace deployment-specific Cloudflare identifiers with documented repository variables and to keep least-privilege token use; never add secret values.
+Add a manual post-deployment checklist with commands/UI checked against the linked official client documentation on 2026-08-27. Use `<MCP_URL>` as the full `/mcp/groceries` endpoint:
 
-Update `README.md` with `/mcp/groceries`, the seven tools, and Hermes, OpenClaw, and Claude Desktop remote-connector setup. Include a birthday-basket example that first calls the planner without any ID and then refines it by resending `replayInput`. Separately show saved-list creation and state plainly that the user/client must retain `listKey`; Stamppot cannot recover it or associate it with a chat after context reset. Do not encourage storing a bearer key in a third-party agent's long-term memory without the user's explicit choice. Include the source attribution, capability warning, and self-hosting runbook. State clearly that official hosting uses Tiered Cache but minimum self-hosting does not require a custom domain.
+- Hermes: `hermes mcp add stamppot --url <MCP_URL>`, then `hermes mcp test stamppot` and `/reload-mcp` in an existing chat if needed.
+- OpenClaw: `openclaw mcp set stamppot '{"url":"<MCP_URL>","transport":"streamable-http"}'`, then `openclaw mcp doctor stamppot --probe`.
+- Claude: under Customize → Connectors, add a custom connector with `<MCP_URL>` and enable it for the conversation; note that Anthropic's cloud, not Claude Desktop's machine, originates the request.
 
-Add a post-deployment interoperability checklist to the runbook, but do not execute it during implementation:
+For each client, ask “Where is 500 ml shampoo cheapest, and which offer has the best price per litre?”, then the 16-adult/6-child party prompt, then a refinement that resends the tool's complete `replayInput`. Create a two-line shopping list, copy the returned `listKey` outside the chat, start a fresh conversation/session, and retrieve it by explicitly supplying that key. Record pass/fail and client version; this checklist is operator-owned post-deployment evidence, not an offline implementation gate.
 
-- Hermes: add the public URL with `hermes mcp add stamppot --url <public-origin>/mcp/groceries`, run `hermes mcp test stamppot`, then ask for a basket and one refinement.
-- OpenClaw: add the remote MCP with the currently documented `openclaw mcp add` form, run `openclaw mcp doctor --probe`, then perform the same two-call prompt. Verify exact CLI flags against current official OpenClaw docs when writing the runbook.
-- Claude Desktop: add the publicly reachable endpoint under Customize → Connectors as a remote custom connector, then perform the same two-call prompt. Note that Anthropic's cloud, not the desktop process, originates remote-connector requests.
+Do not claim any client automatically retains a list key across a new conversation.
 
-For all three, the smoke passes only when the first call needs no domain ID, the second call can use `replayInput`, and a saved list can be retrieved from a fresh conversation/request sequence when the user supplies its `listKey`. Do not claim that any client will automatically retain the key across a new conversation.
-
-**Verify**: `node scripts/setup-self-hosted.mjs --dry-run` → exits 0, prints the planned Wrangler steps, and creates/updates/deploys nothing. `rg -n "D1|R2|Tiered Cache|listKey|replayInput|mcp/groceries|Claude Desktop" README.md docs/runbooks/groceries-self-hosting.md docs/decisions` → docs make the topology, stateless replay, three client paths, and capability limitations explicit. Inspect workflow YAML and confirm no literal token/account/bucket secret was added.
-
-### Step 8: Add the release changeset and run the complete gate
-
-Run `pnpm changeset` and select `@stamppot/core`, `@stamppot/mcp-adapter`, `@stamppot/mcp-groceries`, and `@stamppot/edge` with **minor** bumps. The summary is user-facing; say that Stamppot adds operation behavior hints and stateless 2025 MCP compatibility plus an authless Dutch grocery MCP with replayable basket pricing, catalog search, price history/drops, and capability-held shopping lists/watches. Do not select unrelated packages.
-
-Run the formatter, inspect its diff for scope, then run every full verification command. Update `plans/README.md` to `DONE` only after all gates pass.
+Run `pnpm changeset` and select `@stamppot/mcp-adapter`, `@stamppot/mcp-groceries`, and `@stamppot/edge` for minor bumps. The user-facing summary says Stamppot enables stateless 2025 MCP compatibility and adds an authless Dutch grocery MCP with current-price search, replayable event/basket costing, and capability-held whole-document shopping lists. Do not select core or unrelated packages.
 
 **Verify**:
 
 ```bash
+rg -n "R2|Durable Object|listKey|replayInput|mcp/groceries|Claude Desktop|Tiered Cache|price history" README.md docs/runbooks/groceries-self-hosting.md docs/decisions/groceries.md
 pnpm dlx ultracite fix
 pnpm check
 pnpm install --frozen-lockfile
@@ -486,74 +505,74 @@ pnpm exec wrangler deploy --config dist/stamppot/wrangler.json --dry-run
 git status --short
 ```
 
-Expected: all commands exit 0; Wrangler performs only a dry run; status contains only in-scope files, one new non-empty changeset, and the plan status update. No catalog snapshot/build artifacts, generated bindings, `dist`, `.wrangler`, secrets, or unrelated formatting changes are present.
+Expected: docs distinguish shipped and deferred behavior; all commands exit 0; Wrangler performs only a dry run; status contains only in-scope files, one non-empty changeset, and the plan status update. No generated bindings, catalog builds, upstream snapshots, `dist`, `.wrangler`, secrets, or unrelated formatting changes are present.
 
 ## Test plan
 
-Use `test/calendar.test.ts` for direct operation invocation style and `test/worker.test.ts` for Worker/MCP route style. Keep all fixtures deterministic and all normal tests offline.
+Use `test/calendar.test.ts` for direct operation style and `test/worker.test.ts` for Worker/MCP routes. All fixtures are deterministic and all normal tests are offline.
 
-- `test/core.test.ts`: optional operation annotations remain part of the described operation interface.
-- `test/mcp-adapter.test.ts`: annotations/property descriptions reach `tools/list`; current 2026 and stateless 2025 requests can each list and call tools twice without a session ID.
-- `test/groceries-catalog.test.ts`: schemas, normalization/aliases, hash/sharding stability, package parser, search ranking, checkout vs unit value, incompatible units, provenance, history/drops, corrupt/stale/missing objects, and object-read bounds.
-- `test/groceries-basket.test.ts`: no caller IDs, line-number correlation, replay input validation, pinned-version replay after manifest advancement, unpinned refresh, package rounding, retailer combinations, budgets, optional/unmatched lines, partial-total honesty, max bounds, and the birthday-party fixture.
-- `test/groceries-sync.test.ts`: source validation, deterministic artifacts, stable IDs, manifest-last publish, unchanged no-op, price-change-only history, retention, and publisher failure leaving the previous manifest live.
-- `test/groceries-state.test.ts`: capability generation/validation, server-generated entry IDs, fresh-request continuation, isolation, atomic batches, optimistic revision/recovery, caps/size, expiry alarms, rate limiting, watch kinds, and unavailable offers.
-- `test/groceries-worker.test.ts`: seven-tool domain MCP, combined MCP, self-describing schemas/annotations, 2025/2026 stateless repeat calls, HTTP operations, stable errors, R2/DO integration, generated pages, and sitemap.
-- Existing `test/worker.test.ts` and the complete existing suite remain green.
+- `test/mcp-adapter.test.ts`: current 2026 and stateless 2025 sequences can list/call twice without a session; nested schema descriptions survive; 64 KiB, invalid-JSON, Origin-ordering, and generic-error boundaries hold.
+- `test/groceries-catalog.test.ts`: schemas, normalization/aliases, stable sharding/offer IDs, package parsing, current search ranking, checkout versus unit value, incompatible units, provenance, corrupt/missing objects, stale-but-usable marking, and read bounds.
+- `test/groceries-basket.test.ts`: no IDs, line correlation, unpinned replay, current-version refresh, package rounding, retailer combinations, budget, optional/unmatched lines, honest partial totals, limits, and birthday fixture.
+- `test/groceries-sync.test.ts`: strict source validation, deterministic manifest-plus-shards layout for a fixed clock, later-observation refresh, manifest-last publication, and failure safety; no history or deletion logic.
+- `test/groceries-state.test.ts`: capability format, whole-document create/get/replace, no persisted line IDs/revisions, isolation, caps, last-write-wins, expiry alarm, fresh-sequence retrieval, and rate limiting.
+- `test/groceries-worker.test.ts`: four-tool domain MCP, combined MCP, self-describing schemas, 2025/2026 repeat calls, HTTP routes, stable errors, R2/DO integration, generated pages, and sitemap.
+- Existing `test/worker.test.ts` and the complete suite remain green.
 
 Focused verification:
 
 ```bash
-pnpm exec vitest run test/core.test.ts test/mcp-adapter.test.ts test/groceries-catalog.test.ts test/groceries-basket.test.ts test/groceries-state.test.ts test/groceries-worker.test.ts test/groceries-sync.test.ts
+pnpm exec vitest run test/mcp-adapter.test.ts test/groceries-catalog.test.ts test/groceries-basket.test.ts test/groceries-state.test.ts test/groceries-worker.test.ts test/groceries-sync.test.ts
 ```
 
-Expected: all seven files pass without live network or remote Cloudflare access.
+Expected: all six files pass without live network or remote Cloudflare access.
 
 ## Done criteria
 
-- [ ] Execution occurred in a clean isolated worktree based on a real baseline commit.
-- [ ] Exactly seven grocery operations are exported and available at `/mcp/groceries`, combined `/mcp`, and `/v1/tools/*`.
+- [ ] Execution occurred in an isolated worktree whose non-plan source tree matched `4afd9cf` after the documented current-plan handoff.
+- [ ] Exactly four grocery operations are exported at `/mcp/groceries`, combined `/mcp`, and `/v1/tools/*`.
+- [ ] No price-history, price-drop, watch, notification, annotation, D1, public R2, custom-domain/cache, or setup-wizard code was added.
 - [ ] Search distinguishes checkout price from unit value and never compares incompatible units.
-- [ ] Basket planning requires no caller-generated domain ID, prices a deterministic 16-adult/6-child party fixture, exposes assumptions, and never treats unmatched items as free.
-- [ ] Every basket response contains schema-valid `replayInput` pinned to one catalog version; replay remains deterministic after the current manifest advances, and removing the version refreshes intentionally.
-- [ ] The planner's MCP descriptor contains nested field descriptions and correct read-only/idempotency annotations.
-- [ ] Current 2026 and stateless 2025 MCP request sequences can each call the planner repeatedly without server-side protocol sessions.
-- [ ] Catalog artifacts use 128 immutable versioned R2 shards and manifest-last publication; normal tests do not use live upstream data.
-- [ ] Hosted catalog reads use `fetch()` to the configured R2 custom domain; fallback reads use the R2 binding; no Cache API or D1 was added.
-- [ ] Shopping lists/watches use a random bearer `listKey`, server-generated entry IDs, revision-checked atomic Durable Object writes, 90-day mutation-based expiry, hard size/count caps, and write rate limiting.
-- [ ] Saved state is retrievable from a fresh request sequence using only the returned continuation tuple; docs do not promise automatic cross-conversation key retention or recovery.
-- [ ] Stamppot places no capability in URLs, server-controlled logs/errors, R2, or analytics; docs acknowledge normal tool arguments/results and client-controlled retention.
-- [ ] `pnpm check:mcp-content` validates all seven content files.
-- [ ] `pnpm check` exits 0.
-- [ ] `pnpm install --frozen-lockfile` exits 0.
-- [ ] Wrangler deploy dry run exits 0 without a remote mutation.
-- [ ] Bootstrap dry run exits 0 and the runbook covers minimal and Tiered Cache deployments.
-- [ ] One changeset includes `@stamppot/core`, `@stamppot/mcp-adapter`, `@stamppot/mcp-groceries`, and `@stamppot/edge` minor bumps.
-- [ ] `git status --short` contains only in-scope changes and no generated/catalog/secret artifacts.
-- [ ] `plans/README.md` status is `DONE`.
+- [ ] Basket planning requires no domain ID, prices the birthday fixture, exposes assumptions, and never treats unmatched items as free.
+- [ ] Every basket returns a schema-valid, unpinned `replayInput` plus output-only current catalog version/freshness.
+- [ ] Current 2026 and stateless 2025 request sequences can repeatedly call tools without protocol sessions.
+- [ ] MCP POST bodies are bounded at 64 KiB and unexpected tool failures cannot expose raw exception text.
+- [ ] Catalog artifacts contain only one manifest and 128 immutable search shards; manifest is published last.
+- [ ] V1 configures no catalog lifecycle and implements no remote object listing/deletion.
+- [ ] Every deployed catalog read uses the private R2 binding; no HTTP catalog adapter or Cache API exists.
+- [ ] Lists use a 128-bit bearer `listKey`, one key/value document on a SQLite-backed Durable Object, whole-document replacement, last-write-wins, 90-day save-based expiry, caps, and save rate limiting; there is no application SQL schema.
+- [ ] `get_shopping_list` performs no catalog read and saved state is retrievable in a fresh sequence only when the caller supplies `listKey`.
+- [ ] Stamppot puts no capability in URLs, logs, analytics, errors, or R2; docs acknowledge tool/client retention.
+- [ ] `pnpm check:mcp-content`, the focused test command, `pnpm check`, frozen install, and Wrangler dry-run all exit 0.
+- [ ] The manual runbook covers local, self-hosted, and official private-R2 deployment without a provisioning script.
+- [ ] One changeset includes only `@stamppot/mcp-adapter`, `@stamppot/mcp-groceries`, and `@stamppot/edge` minor bumps.
+- [ ] `git status --short` contains only in-scope files (including the unchanged handoff-copy diff when used) and `plans/README.md` is `DONE`.
 
 ## STOP conditions
 
-Stop and report back; do not improvise if:
+Stop and report; do not improvise if:
 
-- `git rev-parse --verify HEAD` fails, no isolated worktree was supplied, or the worktree has unrelated changes.
-- Snapshot hashes differ and the relevant live behavior no longer matches "Current state".
-- Checkjebon no longer provides a legally reusable stable dataset with product name, retailer, product path/URL, price, and package text, or its license/provenance cannot be documented.
-- The real catalog cannot be built into bounded artifacts that keep the largest index shard below 1 MiB uncompressed and a maximum basket to no more than 21 catalog object reads. Report measurements before changing shard count or input caps.
-- Cloudflare's current platform no longer supports SQLite-backed Durable Objects on the intended plan, R2 custom-domain caching/Tiered Cache, or the Workers Rate Limiting binding used here.
-- Implementing correct operations requires modifying `OperationContext`, the HTTP adapter, MCP transport behavior beyond the explicitly allowed stateless legacy lane/annotation forwarding, landing code/design tokens, or adding D1/user accounts/server-side AI.
-- A capability would need to appear in a URL, Stamppot-controlled logs/analytics, error messages, or the public R2 bucket. Normal tool arguments/results are the explicit exception documented above.
-- Wrangler cannot express the R2/DO/rate-limit configuration or generated binding types without hand-written environment types.
+- The isolated worktree has non-plan source drift from `4afd9cf`, or the current plan was not supplied by one of the documented handoff methods.
+- Drift changes the registry/adapter/Worker/content conventions described above.
+- Checkjebon no longer provides a legally reusable stable dataset with product name, retailer, product path/URL, price, and package text, or its licence/provenance cannot be documented.
+- The real catalog cannot keep its largest 128-way index shard below 1 MiB uncompressed or a maximum basket below 21 catalog-object reads. Report measurements before changing shard count or input caps.
+- Correct behavior requires price history, a direct offer lookup artifact, a public bucket, a custom domain/cache, D1, accounts, server-side AI, or a caller-pinned historical catalog.
+- Cloudflare no longer supports private R2 bindings, SQLite-backed Durable Objects on the intended plan, one expiry alarm per object, or the configured Rate Limiting binding.
+- Correct implementation requires changing `OperationContext`, packages/core, the HTTP adapter, MCP transport behavior beyond stateless legacy compatibility plus the 64 KiB/generic-error boundary, landing code/tokens, or `.github/workflows/ci.yml`.
+- A list capability would need to appear in a URL, Stamppot-controlled log/analytics/error, or R2. Normal tool arguments/results are the documented exception.
+- Wrangler cannot express the R2/DO/rate-limit bindings or generated types without hand-written environment types.
 - A focused or full verification fails twice after one reasonable fix attempt.
-- Remote resource creation, deployment, GitHub secret mutation, pushing, or PR creation becomes necessary to continue. Those require separate operator authority.
+- Remote resource creation, deployment, GitHub secret mutation, pushing, or PR creation is necessary to continue. Those require separate operator authority.
 
 ## Maintenance notes
 
-- Reviewers should scrutinize search false positives, package-unit compatibility, partial-total labeling, subrequest bounds, capability leakage, rate-limit placement, SQL revision atomicity, alarm semantics, and manifest-last publication.
-- Reviewers should call the planner as an unfamiliar agent would: once from plain language with no IDs, once from `replayInput`, and once as a refresh. Tool-page prose cannot compensate for missing descriptions in `tools/list`.
-- `replayInput` is a stateless convenience, not a quote record. Do not later back it with a Durable Object unless a separately justified workflow needs persisted quotes.
+- Review search false positives, package-unit compatibility, partial-total labeling, subrequest bounds, capability leakage, full-document replacement behavior, alarm cleanup, limiter placement, and manifest-last publication.
+- Review the planner as an unfamiliar agent: plain-language call without IDs, one `replayInput` follow-up, then a later call after fixture manifest advancement. A changed current price is valid; a malformed replay is not.
+- Review the list as an unfamiliar agent: create, retain key, get in a fresh sequence, modify the returned complete document, and save it. Tool prose cannot compensate for ambiguous schemas.
 - The alias map is a reviewed product surface. Add aliases with deterministic tests; do not turn it into fuzzy uncontrolled translation.
-- Monitor catalog age, R2 cache hit ratio/Class B reads, Worker CPU/subrequests, Durable Object requests/row writes/storage, rate-limited writes, and corrupt-artifact errors. Log aggregate error codes and catalog versions only, never tool payloads or capabilities.
-- If a second MCP genuinely consumes the grocery catalog, extract the already-versioned artifact reader behind its interface then. Do not let consumers couple directly to bucket internals.
-- Push notifications, cross-device account recovery, multiple named lists under one identity, store-specific availability, location-aware pricing, recipe generation, and a richer event-planning ontology are deliberate follow-ups, not omissions to fill during this plan.
-- Before the first official deployment, an operator must create the production R2 bucket, configure the optional custom domain/cache/lifecycle, ensure the deploy token can bind the bucket, and configure the catalog-sync variables and R2-write secret. This implementation only supplies tested code and a runbook; it must not mutate those external resources automatically during review.
+- Monitor catalog age, R2 Class B reads, Worker CPU/subrequests, Durable Object requests/storage, rate-limited saves, and corrupt-artifact errors. Log aggregate error codes and catalog versions only, never tool payloads or capabilities.
+- Price history/drops/watches should return only when there is demonstrated demand and a real polling/notification consumer. They require a separate data-retention design.
+- Add the R2 custom-domain/Tiered Cache path only after measured latency or Class B cost justifies a second adapter and public bucket. Do not add it speculatively.
+- Add protected catalog cleanup only when measured retained storage justifies an S3/listing dependency or another bounded operator path. Never use a blind prefix lifecycle that can delete the manifest's live version.
+- If concurrent editing becomes real, add an explicit revision contract in a later version; do not smuggle partial mutations into the v1 replacement tool.
+- Before the first official merge/deployment, an operator must create the private EU R2 bucket, ensure deployment credentials can bind it, and configure the catalog-sync variables and bucket-scoped secret. The implementation supplies publishing code and a runbook but performs no external mutation or deletion.
