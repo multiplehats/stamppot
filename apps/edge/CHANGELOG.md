@@ -1,5 +1,36 @@
 # @stamppot/edge
 
+## 0.3.0
+
+### Minor Changes
+
+- 91ef54b: Add current Dutch grocery search and basket planning, plus capability-held saved shopping lists backed by private Cloudflare storage. Harden MCP ingress with stateless legacy compatibility, request validation, a 64 KiB body limit, and generic tool failures.
+- d9ad7d6: Add the Dutch public transport MCP at `/mcp/ov` with five read-only tools: `find_ov_stop` resolves a place or stop name to a code, `plan_train_journey`, `get_train_departures` and `get_rail_disruptions` read the official NS Reisinformatie API, and `get_stop_departures` reads real-time bus, tram and metro departures from OVapi.
+  
+  Station codes and stop-area codes are separate namespaces, so every `find_ov_stop` result states its `kind` and the tools that accept it. Stop-area codes are not alphanumeric — `C.S.` is Rotterdam Centraal perron F — so `get_stop_departures` accepts them as published and they must be passed back verbatim. NS times are ISO 8601 with an offset; OVapi wall-clock times are returned verbatim with `timezone: "Europe/Amsterdam"`. Unreachable upstreams, unknown codes and rate limiting are explicit statuses rather than errors, and every result carries its source and whether that source is official.
+  
+  Self-hosting this domain needs three new pieces of Cloudflare state: an R2 bucket `stamppot-ov-stops` bound as `OV_STOPS` holding the stop directory, a rate-limit binding `OV_UPSTREAM_READS` on namespace `1763268922`, and an `NS_API_KEY` Worker secret. See `docs/runbooks/ov-self-hosting.md`. The groceries domain is unchanged.
+- 357821b: Rebuild the landing and tool pages on HeroUI v3.
+  
+  The bespoke "deck" design system is gone: no project palette, type scale or
+  shapes, and no per-MCP colour identity. `styles.css` is now just Tailwind plus
+  `@heroui/styles`, and the pages are assembled from HeroUI's own component
+  classes. The install picker's hand-rolled listbox is replaced by HeroUI's
+  `Select`, which brings its own keyboard handling and ARIA wiring.
+  
+  The stylesheet is now served as a linked, cached asset instead of being inlined
+  into every document, which takes the home page from roughly 1 MB to 110 KB.
+- 357821b: Remove the placeholder `mcp-calendar` package and its `/mcp/calendar` endpoint. `mcp-groceries` is now the only registered MCP.
+
+### Patch Changes
+
+- Updated dependencies [91ef54b]
+- Updated dependencies [d9ad7d6]
+- Updated dependencies [357821b]
+  - @stamppot/mcp-groceries@0.2.0
+  - @stamppot/mcp-adapter@0.2.0
+  - @stamppot/mcp-ov@0.2.0
+
 ## 0.2.0
 
 ### Minor Changes
