@@ -20,7 +20,7 @@ Revisit Hono when the edge application has enough shared middleware or route gro
 Stamppot already has a strong separation of concerns:
 
 - `packages/core` owns typed operation definitions, validation, descriptions and dispatch. [Source](../../packages/core/src/index.ts)
-- Domain MCPs such as `mcp-calendar` contain only domain schemas and behavior. [Source](../../packages/mcp-calendar/src/index.ts)
+- Domain MCPs such as `mcp-groceries` contain only domain schemas and behavior. [Source](../../packages/mcp-groceries/src/operations.ts)
 - `packages/mcp-adapter` maps the registry into a fresh SDK `McpServer` for every request and keeps MCP concerns out of domain packages. [Source](../../packages/mcp-adapter/src/index.ts)
 - `packages/http-adapter` exposes the same operations as bounded plain JSON endpoints, so the schemas and behavior are shared rather than duplicated. [Source](../../packages/http-adapter/src/index.ts)
 - The Worker owns the route table, CORS for `/v1`, security headers, landing page and health endpoint. Its `withSecurityHeaders` wrapper passes `response.body` through to a new `Response`; it does not call `text()`, `json()` or `arrayBuffer()`, so it does not inherently buffer an SSE response. [Source](../../apps/edge/src/worker.ts)
@@ -67,7 +67,7 @@ The revision removed the old standalone GET stream, protocol-level sessions and 
 
 That makes `responseMode: "auto"` the efficient general default:
 
-- A quick operation such as `get_dutch_time` returns one JSON response.
+- A quick operation such as `find_grocery_options` returns one JSON response.
 - A later long-running operation can emit request-related progress and trigger a lazy SSE upgrade.
 - `responseMode: "sse"` forces every modern request to stream and buys Stamppot nothing today.
 - `responseMode: "json"` saves no meaningful work for today's quick result, while it makes future progress/log notifications disappear.
@@ -108,7 +108,7 @@ Stamppot has no mutable registry or subscription use case today, so do not add a
 
 MCP authorization is optional. When enabled over HTTP, the MCP server is an OAuth resource server: it validates bearer tokens issued for its audience, receives them in the `Authorization` header on every request, and does not accept tokens in query strings. Protected servers publish RFC 9728 resource metadata and enforce scopes. [Current authorization specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization)
 
-Stamppot's current calendar operation is public, read-only, inexpensive and uses no private data, so remaining authless is a reasonable product policy. Reconsider before adding mutation, private data, user-specific state, or quota-priced upstream APIs. That is an application risk decision, not a reason to add Hono. [Current operation](../../packages/mcp-calendar/src/index.ts), [project policy](../../README.md)
+Stamppot's grocery reads are public, inexpensive and use no private data, so remaining authless is a reasonable product policy for them. The saved shopping lists do mutate state, and they stay authless by substituting an unguessable bearer `listKey` for an account: the capability is the only credential, it is scoped to one anonymous document, and writes are rate limited. Reconsider before adding private data, user-specific state, or quota-priced upstream APIs. That is an application risk decision, not a reason to add Hono. [Current operations](../../packages/mcp-groceries/src/operations.ts), [project policy](../../README.md)
 
 The MCP Streamable HTTP specification requires validating every present browser `Origin` and returning 403 for an invalid value. It also recommends authentication for connections. [Source](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http#security--endpoint)
 
@@ -182,7 +182,7 @@ Add a transport matrix:
 2. `responseMode: "auto"`: JSON for a quiet tool; SSE event ordering for a fixture tool that emits progress; aborting the response aborts `OperationContext.signal`.
 3. If enabled, 2025 stateless initialization/list/call and GET/DELETE rejection.
 4. Invalid/malformed/present-but-disallowed `Origin`, Host policy, OPTIONS/CORS, non-JSON content type, malformed JSON and body-over-limit.
-5. Route isolation between `/mcp`, `/mcp/calendar`, `/v1` and the landing page.
+5. Route isolation between `/mcp`, `/mcp/groceries`, `/v1` and the landing page.
 
 Use the real v2 `Client` with `StreamableHTTPClientTransport` in adapter tests instead of hand-built JSON alone; the SDK recommends driving a server in-process through its real client transport. [SDK testing guide](https://ts.sdk.modelcontextprotocol.io/v2/testing.html)
 

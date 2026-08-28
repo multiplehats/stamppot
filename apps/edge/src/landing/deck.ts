@@ -23,8 +23,8 @@ export interface DeckSuit {
 /**
  * Order is load-bearing: it is what decides which MCP gets which accent. The
  * three MCPs named in DESIGN.md land on their documented accents under the hash
- * below — calendar on signal red, transit on royal violet, groceries on
- * antique gold. The last three suits are headroom; they carry felt ink so any
+ * below — groceries on antique gold, calendar on signal red, transit on
+ * royal violet. The last three suits are headroom; they carry felt ink so any
  * future face stays legible without re-checking contrast.
  */
 const SUITS: readonly DeckSuit[] = [
@@ -99,7 +99,7 @@ export function deckSuit(mcpId: string): DeckSuit {
   return suit;
 }
 
-/** `calendar` becomes `MCP-CALENDAR`, the badge worn by every card it fronts. */
+/** `groceries` becomes `MCP-GROCERIES`, the badge worn by every card it fronts. */
 export function mcpBadge(mcpId: string): string {
   return `MCP-${mcpId.toUpperCase()}`;
 }

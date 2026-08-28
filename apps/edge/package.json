@@ -8,7 +8,6 @@
     "@stamppot/core": "workspace:*",
     "@stamppot/http-adapter": "workspace:*",
     "@stamppot/mcp-adapter": "workspace:*",
-    "@stamppot/mcp-calendar": "workspace:*",
     "@stamppot/mcp-groceries": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",

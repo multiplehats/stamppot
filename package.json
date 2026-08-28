@@ -36,7 +36,6 @@
     "@cloudflare/workers-types": "catalog:",
     "@stamppot/core": "workspace:*",
     "@stamppot/mcp-adapter": "workspace:*",
-    "@stamppot/mcp-calendar": "workspace:*",
     "@stamppot/mcp-groceries": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",

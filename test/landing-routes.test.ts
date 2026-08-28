@@ -11,16 +11,16 @@ describe("landing RSC routes", () => {
 
   it("maps tool Flight URLs to their document routes", () => {
     const url = new URL(
-      "https://stamppot.test/tools/get_dutch_time_.rsc?refresh=1"
+      "https://stamppot.test/tools/find_grocery_options_.rsc?refresh=1"
     );
     const route = pageUrl(url);
 
-    expect(route.pathname).toBe("/tools/get_dutch_time");
+    expect(route.pathname).toBe("/tools/find_grocery_options");
     expect(route.search).toBe("?refresh=1");
   });
 
   it("leaves regular document routes untouched", () => {
-    const url = new URL("https://stamppot.test/tools/get_dutch_time");
+    const url = new URL("https://stamppot.test/tools/find_grocery_options");
 
     expect(isRscUrl(url)).toBe(false);
     expect(pageUrl(url)).toBe(url);

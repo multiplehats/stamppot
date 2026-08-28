@@ -14,7 +14,7 @@ One system covers the whole site: the landing page, every tool page, and the sha
 |------|-------|-------|------|
 | Felt | `#16352b` | `--color-felt` | Page background, button fills on light sections, text on pale card faces. Green baize — the literal colour of a card table, not a neutral dark |
 | Card | `#ffffff` | `--color-card` | Card faces, body text on felt, button borders and fills |
-| Signal Red | `#fe2f2f` | `--color-signal-red` | Accent one — the calendar card, reason 01, the outlined scatter card, focus rings |
+| Signal Red | `#fe2f2f` | `--color-signal-red` | Accent one — reason 01, the outlined scatter card, focus rings |
 | Royal Violet | `#7333f1` | `--color-royal-violet` | Accent two — the transit card, reason 02 |
 | Antique Gold | `#d7b73b` | `--color-antique-gold` | Accent three — the groceries card, reason 03 |
 | Lemon | `#fffe5b` | `--color-lemon` | Card face fill — the dealt card, and the bright note in any scatter |
@@ -130,7 +130,7 @@ The inset shadow, not a `border`, is the treatment — it keeps the box model cl
 ### Deck Card
 **Role:** One MCP, presented as a playing card
 
-386px wide in a three-up grid, 580px tall, `--radius-card-lg`, 32px padding, `overflow: clip`, filled with one of the pastel faces. Top-left: a pill badge in the card's accent colour. Below it a 40px weight-800 headline **in the accent colour, not felt** — the face and the type are a matched pair (lemon/red, lavender/violet, cobalt/gold). A white note card is absolutely positioned at 44px from the left, 300px down, rotated -5°, holding an 11px uppercase label and a 15px body. Bottom-right: an accent-coloured action word plus a 26px circled arrow. A card is *dealt* when its MCP is in the registry — badge reads `MCP-CALENDAR` and the note shows real tool output; otherwise the badge reads `NOT DEALT YET` and the note explains what is missing.
+386px wide in a three-up grid, 580px tall, `--radius-card-lg`, 32px padding, `overflow: clip`, filled with one of the pastel faces. Top-left: a pill badge in the card's accent colour. Below it a 40px weight-800 headline **in the accent colour, not felt** — the face and the type are a matched pair (lemon/red, lavender/violet, cobalt/gold). A white note card is absolutely positioned at 44px from the left, 300px down, rotated -5°, holding an 11px uppercase label and a 15px body. Bottom-right: an accent-coloured action word plus a 26px circled arrow. A card is *dealt* when its MCP is in the registry — badge reads `MCP-GROCERIES` and the note shows real tool output; otherwise the badge reads `NOT DEALT YET` and the note explains what is missing.
 
 ### Solid Pill Button (Primary)
 **Role:** Main action
@@ -289,13 +289,13 @@ The id is hashed with djb2 into one of six suits. Order is load-bearing, because
 | Suit | Face | Accent | Lands on |
 |------|------|--------|----------|
 | 0 | Cobalt | Antique Gold | `groceries` |
-| 1 | Lemon | Signal Red | `calendar` |
+| 1 | Lemon | Signal Red | `calendar` (unregistered) |
 | 2 | Lavender | Royal Violet | `transit` |
 | 3 | Sky | Signal Red badge, felt ink | — |
 | 4 | Mint | Royal Violet badge, felt ink | — |
 | 5 | Bubblegum | Antique Gold badge, felt ink | — |
 
-The `calendar` row is a fact. The `transit` and `groceries` rows are predictions: neither MCP is registered yet, and the hash keys on the id, so naming one `boodschappen` instead of `groceries` deals it a different suit. Re-derive rather than trust the table.
+The `groceries` row is a fact. The `calendar` and `transit` rows are predictions: neither MCP is registered, and the hash keys on the id, so naming one `boodschappen` instead of `groceries` deals it a different suit. Re-derive rather than trust the table.
 
 The last three suits are headroom. They carry felt ink so a future face stays legible without re-checking contrast.
 

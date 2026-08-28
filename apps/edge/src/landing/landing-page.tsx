@@ -107,7 +107,7 @@ export function LandingPage({
       <SiteNavigation page="landing" />
       <main>
         <Hero origin={origin} />
-        <Why sampleMcpId={firstMcp?.id ?? "calendar"} />
+        <Why sampleMcpId={firstMcp?.id ?? "groceries"} />
         <Deck content={content} mcps={mcps} />
         <OpenSource />
         <SafeByDesign />

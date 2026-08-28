@@ -2,7 +2,6 @@ import { env as bindings } from "cloudflare:workers";
 import { OperationRegistry } from "@stamppot/core";
 import { handleHttpToolsRequest } from "@stamppot/http-adapter";
 import { createRegistryMcpHandler } from "@stamppot/mcp-adapter";
-import { calendarMcp } from "@stamppot/mcp-calendar";
 import { createGroceriesMcp } from "@stamppot/mcp-groceries";
 import { createCloudflareGroceriesDependencies } from "@stamppot/mcp-groceries/cloudflare";
 import { toolContent } from "./landing/content";
@@ -19,19 +18,12 @@ const TOOL_PAGE_PATTERN = /^\/tools\/([a-z][a-z0-9_]*)$/;
 const groceriesMcp = createGroceriesMcp(
   createCloudflareGroceriesDependencies(() => bindings)
 );
-const registry = new OperationRegistry([calendarMcp, groceriesMcp]);
+const registry = new OperationRegistry([groceriesMcp]);
 const toolCatalog = toolContent(registry);
 
 const combinedMcpHandler = createRegistryMcpHandler(registry, {
   route: "/mcp",
   serverName: "stamppot",
-  serverVersion: SERVER_VERSION,
-});
-
-const calendarMcpHandler = createRegistryMcpHandler(registry, {
-  mcp: calendarMcp,
-  route: "/mcp/calendar",
-  serverName: "stamppot-calendar",
   serverVersion: SERVER_VERSION,
 });
 
@@ -111,9 +103,6 @@ export default {
 
     if (url.pathname === "/mcp") {
       return withSecurityHeaders(await combinedMcpHandler(request, env, ctx));
-    }
-    if (url.pathname === "/mcp/calendar") {
-      return withSecurityHeaders(await calendarMcpHandler(request, env, ctx));
     }
     if (url.pathname === "/mcp/groceries") {
       return withSecurityHeaders(await groceriesMcpHandler(request, env, ctx));
