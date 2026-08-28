@@ -88,7 +88,7 @@ export function createGroceryOperations(
 ): readonly Operation[] {
   const findGroceryOptions = defineOperation({
     description:
-      "Read the current Checkjebon snapshot to find real Dutch grocery packages. Returns relevance-ranked offers, the cheapest checkout price, and separate mass, volume, or each unit-value winners. Prices are indicative, may vary by location or checkout time, and do not guarantee inventory.",
+      "Lees de actuele Checkjebon-momentopname om echte Nederlandse boodschappenverpakkingen te vinden. Geeft opties terug gerangschikt op relevantie, de laagste kassaprijs en apart de winnaar op prijs per gewicht, per volume of per stuk. Prijzen zijn indicatief, kunnen per locatie of afrekenmoment verschillen en zeggen niets over voorraad.",
     async execute(context, input) {
       try {
         return await dependencies.catalog.search(input, {
@@ -105,12 +105,12 @@ export function createGroceryOperations(
     input: findGroceryOptionsInputSchema,
     name: "find_grocery_options",
     output: findGroceryOptionsOutputSchema,
-    title: "Find current grocery options (read-only)",
+    title: "Vind actuele boodschappenopties (alleen-lezen)",
   });
 
   const planGroceryBasket = defineOperation({
     description:
-      "Price a concrete grocery basket against the current Checkjebon snapshot without creating a quote or ID. For an occasion, first decompose the request into at most 20 specific lines and quantities. The result rounds up sale packages, reports unmatched lines honestly, compares one store with up to the requested store limit, and returns complete replayInput. For a follow-up, resend that entire replayInput after editing the desired fields; prices may refresh because replay is intentionally not version-pinned.",
+      "Bereken de prijs van een concreet boodschappenmandje aan de hand van de actuele Checkjebon-momentopname, zonder een offerte of ID aan te maken. Splits de aanvraag voor een gelegenheid eerst op in maximaal 20 specifieke regels en hoeveelheden. Het resultaat rondt verpakkingen naar boven af, meldt eerlijk welke regels niet gevonden zijn, vergelijkt van één winkel tot maximaal het gevraagde aantal winkels en geeft de complete replayInput terug. Stuur bij een vervolgvraag die volledige replayInput opnieuw mee na het aanpassen van de gewenste velden; prijzen kunnen daarbij veranderen omdat replay bewust niet aan een versie is vastgepind.",
     async execute(context, input) {
       try {
         return await dependencies.catalog.planBasket(input, {
@@ -127,12 +127,12 @@ export function createGroceryOperations(
     input: planGroceryBasketInputSchema,
     name: "plan_grocery_basket",
     output: planGroceryBasketOutputSchema,
-    title: "Plan a current grocery basket (read-only)",
+    title: "Plan een actueel boodschappenmandje (alleen-lezen)",
   });
 
   const getShoppingList = defineOperation({
     description:
-      "Read one anonymous saved shopping-list document using its bearer listKey. Reads do not extend the 90-day expiry and do not access the grocery catalog. To price the desired unchecked or complete lines, pass them separately to plan_grocery_basket. The capability is unrecoverable if the client or user loses it.",
+      "Haal één anoniem opgeslagen boodschappenlijstdocument op met de bijbehorende bearer listKey. Lezen verlengt de vervaltermijn van 90 dagen niet en heeft geen toegang tot de boodschappencatalogus. Geef de gewenste onaangevinkte of complete regels apart door aan plan_grocery_basket om de prijs te berekenen. De capability is niet herstelbaar als de client of gebruiker deze kwijtraakt.",
     async execute(context, input) {
       try {
         const envelope = await dependencies.shoppingLists.get(
@@ -155,12 +155,12 @@ export function createGroceryOperations(
     input: getShoppingListInputSchema,
     name: "get_shopping_list",
     output: getShoppingListOutputSchema,
-    title: "Get a saved shopping list (read-only)",
+    title: "Haal een opgeslagen boodschappenlijst op (alleen-lezen)",
   });
 
   const saveShoppingList = defineOperation({
     description:
-      "Create or replace one bounded anonymous shopping-list document. Omit listKey only to create; retain the returned capability because it cannot be recovered. Before changing an existing list, call get_shopping_list, preserve every line the user still wants, edit that complete document, and resend it with listKey. Replacement is last-write-wins, extends expiry to 90 days, and is subject to an approximate abuse rate limit.",
+      "Maak een nieuw begrensd anoniem boodschappenlijstdocument aan of vervang een bestaand document. Laat listKey alleen weg om aan te maken; bewaar de teruggegeven capability, want deze kan niet worden hersteld. Roep voordat je een bestaande lijst wijzigt eerst get_shopping_list aan, behoud elke regel die de gebruiker nog wil, bewerk dat complete document en stuur het opnieuw mee met listKey. Vervangen werkt volgens last-write-wins, verlengt de vervaltermijn naar 90 dagen en valt onder een benaderende rate limit tegen misbruik.",
     async execute(context, input) {
       try {
         const isAllowed = await dependencies.writeLimiter.consume(
@@ -217,7 +217,7 @@ export function createGroceryOperations(
     input: saveShoppingListInputSchema,
     name: "save_shopping_list",
     output: saveShoppingListOutputSchema,
-    title: "Save a complete shopping list (mutating)",
+    title: "Sla een complete boodschappenlijst op (schrijvend)",
   });
 
   return [

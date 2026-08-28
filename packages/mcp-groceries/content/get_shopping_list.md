@@ -1,17 +1,17 @@
 ---
-category: shopping-lists
+category: boodschappenlijsten
 tags:
-  - groceries
-  - shopping-list
+  - boodschappen
+  - boodschappenlijst
   - bearer-capability
   - durable-objects
 related:
   - save_shopping_list
   - plan_grocery_basket
 ---
-# Get a capability-held shopping list
+# Een capability-boodschappenlijst ophalen
 
-`get_shopping_list` reads one anonymous saved grocery list. It requires the exact bearer `listKey` returned when the list was created. The key is not tied to an MCP session, conversation, account, Claude profile, Hermes profile, or OpenClaw installation, and it cannot be recovered after it is lost.
+`get_shopping_list` leest één anonieme opgeslagen boodschappenlijst. Daarvoor is de exacte bearer `listKey` nodig die is teruggegeven bij het aanmaken van de lijst. De sleutel is niet gekoppeld aan een MCP-sessie, gesprek, account, Claude-profiel, Hermes-profiel of OpenClaw-installatie, en kan niet worden teruggehaald zodra hij kwijt is.
 
 ```json
 {
@@ -19,14 +19,14 @@ related:
 }
 ```
 
-On success the tool returns the complete canonical document, its save time, and its expiry. Reading does not extend the 90-day expiry. The operation touches only the list’s Durable Object and never reads the grocery catalog or silently reprices saved lines.
+Bij succes geeft de tool het complete canonieke document terug, met het opslagtijdstip en het vervalmoment. Lezen verlengt de vervaltermijn van 90 dagen niet. De bewerking raakt alleen het Durable Object van de lijst: de boodschappencatalogus wordt nooit gelezen en opgeslagen regels worden nooit stilzwijgend opnieuw geprijsd.
 
-When the user asks for current prices, choose the desired unchecked or complete lines from the returned document and pass those lines to `plan_grocery_basket`. Keep saved state and current catalog calculations as separate steps.
+Als de gebruiker om actuele prijzen vraagt, kies dan de gewenste niet-afgevinkte of complete regels uit het teruggegeven document en geef die door aan `plan_grocery_basket`. Houd opgeslagen status en actuele catalogusberekeningen als aparte stappen.
 
-## Capability and errors
+## Capability en fouten
 
-Treat `listKey` as a secret bearer capability. Third-party clients may retain tool arguments and results under their own policies. Stamppot does not put it in URLs, catalog R2 objects, logs, analytics, or error results.
+Behandel `listKey` als een geheime bearer capability. Clients van derden kunnen tool-argumenten en resultaten bewaren volgens hun eigen beleid. Stamppot plaatst hem niet in URL’s, catalogus-R2-objecten, logs, analytics of foutresultaten.
 
-A syntactically valid but missing or expired capability returns `unknown_list` with `retryable: false` and does not echo the key. Invalid capability syntax is rejected before the Durable Object is accessed.
+Een syntactisch geldige maar ontbrekende of verlopen capability geeft `unknown_list` terug met `retryable: false` en herhaalt de sleutel niet in het antwoord. Ongeldige capability-syntax wordt geweigerd voordat het Durable Object wordt benaderd.
 
-Connect directly at `/mcp/groceries` or use the combined `/mcp` endpoint.
+Koppel direct op `/mcp/groceries`, of gebruik het gecombineerde `/mcp` endpoint.

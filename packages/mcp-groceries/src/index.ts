@@ -42,9 +42,9 @@ export function createGroceriesMcp(
 ): McpDefinition {
   return defineMcp({
     description:
-      "Current Dutch grocery package search and deterministic basket costing, plus optional capability-held shopping lists. Agents should decompose occasions into at most 20 concrete lines before planning and resend a result's complete replayInput for follow-ups. Prices are indicative Checkjebon snapshots and inventory is not guaranteed.",
+      "Doorzoekt actuele Nederlandse boodschappenverpakkingen en berekent een mandje deterministisch door, plus optionele boodschappenlijsten achter een capability. Agents moeten gelegenheden opdelen in maximaal 20 concrete regels voor het plannen en sturen bij een vervolgvraag de complete replayInput van een resultaat opnieuw mee. Prijzen zijn indicatieve Checkjebon-momentopnames en voorraad is niet gegarandeerd.",
     id: "groceries",
     operations: createGroceryOperations(dependencies),
-    title: "Dutch groceries",
+    title: "Nederlandse boodschappen",
   });
 }

@@ -1,21 +1,21 @@
 ---
-category: groceries
+category: boodschappen
 tags:
-  - netherlands
-  - grocery-prices
-  - basket-planning
-  - package-rounding
+  - nederland
+  - boodschappenprijzen
+  - mandjeplanning
+  - verpakkingsafronding
 related:
   - find_grocery_options
   - get_shopping_list
 ---
-# Plan a current Dutch grocery basket
+# Een actueel Nederlands boodschappenmandje plannen
 
-`plan_grocery_basket` prices an ordered set of concrete grocery lines against current Dutch supermarket packages. It is stateless and creates no quote ID. Before calling for an occasion, reason with the user and decompose the request into at most 20 products and target quantities.
+`plan_grocery_basket` berekent de prijs van een geordende reeks concrete boodschappenregels aan de hand van actuele Nederlandse supermarktverpakkingen. De tool is stateless en maakt geen offerte-ID aan. Overleg bij een gelegenheid eerst met de gebruiker en splits het verzoek op in maximaal 20 producten met doelhoeveelheden.
 
-## Agent workflow
+## Werkwijze voor agents
 
-Send the complete basket. A missing target means one sale package. Mass and volume targets are converted to base units, then package counts round up so the requested amount is covered. Optional lines are priced when found, while a missing optional line does not make the plan incomplete.
+Stuur het complete mandje. Een ontbrekend doel betekent één verpakking. Doelen voor gewicht en volume worden omgezet naar basiseenheden, waarna het aantal verpakkingen naar boven wordt afgerond zodat de gevraagde hoeveelheid gedekt is. Optionele regels krijgen een prijs zodra ze gevonden zijn; een ontbrekende optionele regel maakt het plan niet onvolledig.
 
 ```json
 {
@@ -29,14 +29,14 @@ Send the complete basket. A missing target means one sale package. Mass and volu
 }
 ```
 
-The result compares the best single store with the cheapest combination within the store limit. Every priced and unmatched line retains its one-based line number and original query. Totals never treat unmatched items as zero-cost. Budget fields are comparative metadata and never silently remove a line.
+Het resultaat vergelijkt de beste losse winkel met de goedkoopste combinatie binnen de winkellimiet. Elke geprijsde en niet-gematchte regel behoudt zijn regelnummer (dat bij 1 begint) en de oorspronkelijke zoekopdracht. Totalen behandelen niet-gematchte items nooit als gratis. Budgetvelden zijn vergelijkende metadata en verwijderen nooit stilzwijgend een regel.
 
-For any follow-up, copy the result’s complete `replayInput`, edit the desired field, and resend it. The replay intentionally contains no catalog version, so a later call uses the newest prices and may change.
+Kopieer voor elke vervolgstap de complete `replayInput` uit het resultaat, pas het gewenste veld aan en stuur hem opnieuw. De replay bevat bewust geen catalogusversie, zodat een latere aanroep de nieuwste prijzen gebruikt en kan afwijken.
 
-## Source, freshness, and errors
+## Bron, versheid en fouten
 
-Prices come from [Checkjebon](https://github.com/supermarkt/checkjebon) under the MIT licence. Every result includes catalog provenance, observation time, and fresh or stale status. Prices are indicative, may differ by location or checkout time, and do not guarantee inventory.
+Prijzen komen van [Checkjebon](https://github.com/supermarkt/checkjebon) onder de MIT-licentie. Elk resultaat bevat de catalogusherkomst, het observatietijdstip en de status vers of verouderd. Prijzen zijn indicatief, kunnen per locatie of afrekenmoment verschillen en zeggen niets over voorraad.
 
-A missing or corrupt catalog returns `catalog_unavailable` with `retryable: true`. Invalid quantities, retailer filters, budgets, or more than 20 lines are rejected before planning.
+Een ontbrekende of beschadigde catalogus geeft `catalog_unavailable` terug met `retryable: true`. Ongeldige hoeveelheden, winkelfilters, budgetten of meer dan 20 regels worden geweigerd voordat er gepland wordt.
 
-Connect directly at `/mcp/groceries` or use the combined `/mcp` endpoint.
+Koppel direct op `/mcp/groceries`, of gebruik het gecombineerde `/mcp` endpoint.

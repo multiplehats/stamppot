@@ -1,20 +1,20 @@
 ---
-category: groceries
+category: boodschappen
 tags:
-  - netherlands
-  - grocery-prices
-  - supermarkets
-  - unit-pricing
+  - nederland
+  - boodschappenprijzen
+  - supermarkten
+  - prijs-per-eenheid
 related:
   - plan_grocery_basket
 ---
-# Find current Dutch grocery options
+# Actuele Nederlandse boodschappenopties vinden
 
-`find_grocery_options` searches the current Dutch grocery catalog for real sale packages. Use it for questions such as “Where is 500 ml shampoo cheapest?” or “Which option has the best price per litre?” The result keeps checkout price separate from comparable mass, volume, and each-unit value.
+`find_grocery_options` doorzoekt de actuele Nederlandse boodschappencatalogus op echte verpakkingen. Gebruik het voor vragen als “Waar is 500 ml shampoo het goedkoopst?” of “Welke optie heeft de beste prijs per liter?” Het resultaat houdt de kassaprijs gescheiden van de vergelijkbare waarde per gewicht, volume en stuk.
 
-## Agent workflow
+## Werkwijze voor agents
 
-Send a concrete product query. Optionally restrict the search to unique retailer slugs and choose a result limit. An empty retailer list means all current retailers; a valid but unknown slug deliberately returns no matches rather than widening the search.
+Stuur een concrete productzoekopdracht. Beperk de zoekopdracht optioneel tot unieke winkel-slugs en kies een limiet voor het aantal resultaten. Een lege winkellijst betekent alle huidige winkels; een geldige maar onbekende slug levert bewust geen resultaten op in plaats van de zoekopdracht te verbreden.
 
 ```json
 {
@@ -24,12 +24,12 @@ Send a concrete product query. Optionally restrict the search to unique retailer
 }
 ```
 
-The response identifies the cheapest package at checkout and separately names the best comparable value in each compatible dimension. Unknown package quantities never become unit-value winners, and mass, volume, and item counts are never compared with one another.
+Het antwoord wijst de goedkoopste verpakking bij de kassa aan en noemt apart de beste vergelijkbare waarde in elke compatibele dimensie. Onbekende verpakkingshoeveelheden worden nooit winnaar op waarde per eenheid, en gewicht, volume en aantal stuks worden nooit met elkaar vergeleken.
 
-## Source, freshness, and errors
+## Bron, versheid en fouten
 
-Offers come from the [Checkjebon](https://github.com/supermarkt/checkjebon) supermarket dataset under the MIT licence. Results include its current catalog version and observation time. A snapshot older than 48 hours remains usable but is marked stale. Prices are indicative, may vary by location or checkout time, and do not guarantee inventory.
+De opties komen uit de [Checkjebon](https://github.com/supermarkt/checkjebon) supermarktdataset onder de MIT-licentie. Resultaten bevatten de actuele catalogusversie en het observatietijdstip. Een momentopname ouder dan 48 uur blijft bruikbaar, maar wordt gemarkeerd als verouderd. Prijzen zijn indicatief, kunnen per locatie of afrekenmoment verschillen en zeggen niets over voorraad.
 
-A missing or corrupt catalog returns `catalog_unavailable` with `retryable: true`. A successful search with no match returns `status: "ok"` and an empty offer array. Invalid fields are rejected before the tool runs.
+Een ontbrekende of beschadigde catalogus geeft `catalog_unavailable` terug met `retryable: true`. Een succesvolle zoekopdracht zonder match geeft `status: "ok"` terug met een lege array met opties. Ongeldige velden worden geweigerd voordat de tool wordt uitgevoerd.
 
-Connect directly at `/mcp/groceries` or use the combined `/mcp` endpoint.
+Koppel direct op `/mcp/groceries`, of gebruik het gecombineerde `/mcp` endpoint.

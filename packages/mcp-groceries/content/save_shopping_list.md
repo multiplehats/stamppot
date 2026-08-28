@@ -1,17 +1,17 @@
 ---
-category: shopping-lists
+category: boodschappenlijsten
 tags:
-  - groceries
-  - shopping-list
+  - boodschappen
+  - boodschappenlijst
   - bearer-capability
-  - whole-document
+  - volledig-document
 related:
   - get_shopping_list
   - plan_grocery_basket
 ---
-# Save a complete capability-held shopping list
+# Een complete capability-boodschappenlijst opslaan
 
-`save_shopping_list` creates or replaces one small anonymous grocery-list document. Omit `listKey` only when creating. Creation is not idempotent: if the response is lost, retrying without its returned key may create a second unreachable list.
+`save_shopping_list` maakt of vervangt één klein anoniem boodschappenlijst-document. Laat `listKey` alleen weg bij het aanmaken. Aanmaken is niet idempotent: als het antwoord verloren gaat, kan opnieuw proberen zonder de teruggegeven sleutel een tweede, onbereikbare lijst aanmaken.
 
 ```json
 {
@@ -25,14 +25,14 @@ related:
 }
 ```
 
-To change an existing list, first call `get_shopping_list`, preserve every line the user still wants, edit the returned complete document, and resend that document with its `listKey`. There are no partial mutations, persisted line IDs, revisions, or merge rules. Concurrent replacements are last-write-wins.
+Wil je een bestaande lijst wijzigen? Roep dan eerst `get_shopping_list` aan, behoud elke regel die de gebruiker nog wil, bewerk het teruggegeven complete document en stuur dat document opnieuw met de bijbehorende `listKey`. Er zijn geen gedeeltelijke mutaties, permanente regel-ID’s, revisies of samenvoegregels. Gelijktijdige vervangingen werken volgens last-write-wins.
 
-Successful saves return the complete canonical document and extend expiry to 90 days. The document is limited to 20 lines and 16 KiB of UTF-8 JSON. Saved products are not quotes; use `plan_grocery_basket` separately whenever the user wants current Checkjebon prices.
+Succesvolle opslagacties geven het complete canonieke document terug en verlengen de vervaltermijn naar 90 dagen. Het document is beperkt tot 20 regels en 16 KiB UTF-8 JSON. Opgeslagen producten zijn geen offertes; gebruik `plan_grocery_basket` apart wanneer de gebruiker actuele Checkjebon-prijzen wil.
 
-## Capability and errors
+## Capability en fouten
 
-Retain the returned bearer key outside disposable conversation context. It is not recoverable and is not an account identity. Stamppot never places it in a URL, R2, logs, analytics, or an error result, although third-party clients may retain tool arguments and results under their own policies.
+Bewaar de teruggegeven bearer-sleutel ergens buiten de tijdelijke gesprekscontext. Hij is niet herstelbaar en is geen account-identiteit. Stamppot plaatst hem nooit in een URL, R2, logs, analytics of een foutresultaat, al kunnen clients van derden tool-argumenten en resultaten bewaren volgens hun eigen beleid.
 
-An unknown or expired supplied key returns `unknown_list`. The approximate save abuse brake can return `rate_limited` with a 60-second retry hint; it is not authorization or accounting and may group users behind a proxy.
+Een onbekende of verlopen opgegeven sleutel geeft `unknown_list` terug. De rem tegen misbruik van het opslaan werkt bij benadering en kan `rate_limited` teruggeven met een retry-hint van 60 seconden; dit is geen autorisatie of boekhouding en kan gebruikers achter een proxy als één groep behandelen.
 
-Connect directly at `/mcp/groceries` or use the combined `/mcp` endpoint.
+Koppel direct op `/mcp/groceries`, of gebruik het gecombineerde `/mcp` endpoint.

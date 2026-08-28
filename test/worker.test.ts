@@ -1,14 +1,34 @@
-import { SELF } from "cloudflare:test";
+import { env, SELF } from "cloudflare:test";
 import {
   CLIENT_CAPABILITIES_META_KEY,
   CLIENT_INFO_META_KEY,
   PROTOCOL_VERSION_META_KEY,
 } from "@modelcontextprotocol/server";
-import { describe, expect, it } from "vitest";
+import {
+  buildCatalogArtifacts,
+  publishCatalogArtifacts,
+} from "@stamppot/mcp-groceries/catalog-build";
+import { beforeAll, describe, expect, it } from "vitest";
+import fixtureText from "../packages/mcp-groceries/fixtures/checkjebon-small.json?raw";
 
 const MCP_PROTOCOL_VERSION = "2026-07-28";
 
 describe("Stamppot Worker", () => {
+  // Every route below is served by the groceries MCP, and its read tools go to
+  // R2. Publishing the fixture snapshot once keeps the invoke test a real
+  // search rather than an assertion about a missing catalog.
+  beforeAll(async () => {
+    const artifacts = await buildCatalogArtifacts({
+      observedAt: new Date("2026-08-27T08:15:30.000Z"),
+      source: JSON.parse(fixtureText) as unknown,
+    });
+    await publishCatalogArtifacts(artifacts, {
+      put: async ({ body, key }) => {
+        await env.GROCERIES_CATALOG.put(key, body);
+      },
+    });
+  });
+
   it("serves a health response", async () => {
     const response = await SELF.fetch("https://stamppot.test/health");
 
@@ -25,18 +45,20 @@ describe("Stamppot Worker", () => {
       headers: { accept: "text/markdown" },
     });
 
-    expect(await html.text()).toContain("get_dutch_time");
+    expect(await html.text()).toContain("find_grocery_options");
     expect(html.headers.get("content-type")).toContain("text/html");
     expect(await markdown.text()).toContain(
-      "[`get_dutch_time`](https://stamppot.test/tools/get_dutch_time)"
+      "[`find_grocery_options`](https://stamppot.test/tools/find_grocery_options)"
     );
     expect(markdown.headers.get("content-type")).toContain("text/markdown");
   });
 
   it("renders a rich HTML and Markdown page for every tool", async () => {
-    const html = await SELF.fetch("https://stamppot.test/tools/get_dutch_time");
+    const html = await SELF.fetch(
+      "https://stamppot.test/tools/find_grocery_options"
+    );
     const markdown = await SELF.fetch(
-      "https://stamppot.test/tools/get_dutch_time",
+      "https://stamppot.test/tools/find_grocery_options",
       { headers: { accept: "text/markdown" } }
     );
     const htmlBody = await html.text();
@@ -44,15 +66,17 @@ describe("Stamppot Worker", () => {
 
     expect(html.status).toBe(200);
     expect(html.headers.get("content-type")).toContain("text/html");
-    expect(htmlBody).toContain("Dutch local time and date");
+    expect(htmlBody).toContain("Actuele Nederlandse boodschappenopties vinden");
     expect(htmlBody).toContain(
-      '<link href="https://stamppot.test/tools/get_dutch_time" rel="canonical"/>'
+      '<link href="https://stamppot.test/tools/find_grocery_options" rel="canonical"/>'
     );
     expect(htmlBody).toContain('type="application/ld+json"');
     expect(markdown.headers.get("content-type")).toContain("text/markdown");
-    expect(markdownBody).toContain("# Dutch local time and date");
-    expect(markdownBody).toContain("## Structured result");
-    expect(markdownBody).not.toContain("category: date-and-time");
+    expect(markdownBody).toContain(
+      "# Actuele Nederlandse boodschappenopties vinden"
+    );
+    expect(markdownBody).toContain("## Werkwijze voor agents");
+    expect(markdownBody).not.toContain("category: boodschappen");
   });
 
   it("publishes tool pages in the sitemap", async () => {
@@ -62,15 +86,15 @@ describe("Stamppot Worker", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/xml");
     expect(sitemap).toContain(
-      "<loc>https://stamppot.test/tools/get_dutch_time</loc>"
+      "<loc>https://stamppot.test/tools/find_grocery_options</loc>"
     );
   });
 
   it("invokes the same operation through plain HTTP", async () => {
     const response = await SELF.fetch(
-      "https://stamppot.test/v1/tools/get_dutch_time",
+      "https://stamppot.test/v1/tools/find_grocery_options",
       {
-        body: JSON.stringify({ instant: "2026-08-27T10:15:30Z" }),
+        body: JSON.stringify({ query: "shampoo familie" }),
         headers: { "content-type": "application/json" },
         method: "POST",
       }
@@ -78,17 +102,15 @@ describe("Stamppot Worker", () => {
     const result = await response.json<Record<string, unknown>>();
 
     expect(response.status).toBe(200);
-    expect(result).toMatchObject({
-      localDate: "2026-08-27",
-      localTime: "12:15:30",
-    });
+    expect(result).toMatchObject({ status: "ok" });
+    expect(JSON.stringify(result)).toContain("Shampoo familie");
   });
 
   it("rejects malformed input with a stable error envelope", async () => {
     const response = await SELF.fetch(
-      "https://stamppot.test/v1/tools/get_dutch_time",
+      "https://stamppot.test/v1/tools/find_grocery_options",
       {
-        body: JSON.stringify({ instant: "tomorrow-ish" }),
+        body: JSON.stringify({ query: "x" }),
         headers: { "content-type": "application/json" },
         method: "POST",
       }
@@ -128,7 +150,7 @@ describe("Stamppot Worker", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");
     expect(payload.result.tools.map(({ name }) => name)).toContain(
-      "get_dutch_time"
+      "find_grocery_options"
     );
   });
 });

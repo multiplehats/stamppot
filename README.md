@@ -8,11 +8,11 @@
 
 Stamppot combines small domain MCPs behind one Cloudflare Worker while keeping each MCP independently connectable.
 
-The first is `mcp-calendar`, with a `get_dutch_time` tool that understands `Europe/Amsterdam` and daylight-saving time.
+The first is `mcp-groceries`, which searches the current Dutch grocery catalog, prices a basket across retailers, and keeps optional anonymous shopping lists.
 
 ## What is included
 
-- A stateless MCP endpoint at `/mcp` and domain endpoint at `/mcp/calendar`
+- A combined MCP endpoint at `/mcp` and domain endpoint at `/mcp/groceries`
 - Plain JSON discovery and invocation routes under `/v1`
 - A server-rendered landing page compiled with Tailwind CSS 4
 - An install picker covering eight MCP clients, on the landing page and every tool page
@@ -21,7 +21,7 @@ The first is `mcp-calendar`, with a `get_dutch_time` tool that understands `Euro
 - Worker-runtime integration tests with Vitest
 - Shared versions managed through the pnpm workspace catalog
 
-There is deliberately no authentication, database or Durable Object. The immutable operation registry is created once per Worker isolate; stateful infrastructure can be added when a tool has a real coordination or persistence requirement.
+There is deliberately no authentication. The immutable operation registry is created once per Worker isolate, and most tools are pure reads over a snapshot in R2. Stateful infrastructure is added only when a tool has a real persistence requirement: saved shopping lists use a Durable Object keyed by an anonymous bearer `listKey`, which is tied to no account and no MCP session.
 
 The pages are React Server Components. Only the install picker ships to the browser as a client component; everything else, including the Parsew SDK that resolves its brand icons, stays on the server. Those icons are the one third-party request the site makes, and a missing one falls back to a monogram.
 
@@ -67,14 +67,14 @@ curl -H 'accept: text/markdown' http://localhost:5173/
 
 Both are generated from `apps/edge/src/landing/install-targets.ts`, so adding a client there updates the page, the Markdown and this workflow at once.
 
-For a domain-only connection, use `http://localhost:5173/mcp/calendar`. Each tool page carries the same picker, already pointed at its own MCP.
+For a domain-only connection, use `http://localhost:5173/mcp/groceries`. Each tool page carries the same picker, already pointed at its own MCP.
 
 ## HTTP routes
 
 | Route | Purpose |
 | --- | --- |
 | `POST /mcp` | Combined MCP transport |
-| `POST /mcp/calendar` | Calendar-only MCP transport |
+| `POST /mcp/groceries` | Groceries-only MCP transport |
 | `GET /v1/mcps` | Discover MCPs and their operations |
 | `GET /v1/tools` | Discover all operations |
 | `POST /v1/tools/:name` | Invoke an operation with a JSON body |
@@ -91,12 +91,12 @@ apps/edge/               Cloudflare Worker, routing and landing page
 packages/core/           Operation definition and registry
 packages/http-adapter/   Plain JSON transport
 packages/mcp-adapter/    MCP SDK transport
-packages/mcp-calendar/   Independently connectable Dutch calendar MCP
+packages/mcp-groceries/  Independently connectable Dutch groceries MCP
 scripts/                 MCP content validation and build compiler
 test/                    Unit and Worker-runtime integration tests
 ```
 
-Independently connectable domain packages use `packages/mcp-<domain>`, for example `mcp-transit` and `mcp-groceries`. Infrastructure packages use descriptive names without that prefix. This keeps the `packages` directory readable as the collection grows.
+Independently connectable domain packages use `packages/mcp-<domain>`, for example `mcp-transit` and `mcp-postcode`. Infrastructure packages use descriptive names without that prefix. This keeps the `packages` directory readable as the collection grows.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the package contract and steps for adding an MCP.
 
