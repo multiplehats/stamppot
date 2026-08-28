@@ -8,11 +8,11 @@
 
 Stamppot combines small domain MCPs behind one Cloudflare Worker while keeping each MCP independently connectable.
 
-The first is `mcp-groceries`, which searches the current Dutch grocery catalog, prices a basket across retailers, and keeps optional anonymous shopping lists.
+The first is `mcp-groceries`, which searches the current Dutch grocery catalog, prices a basket across retailers, and keeps optional anonymous shopping lists. The second is `mcp-ov`, which plans train journeys, reads departure boards and rail disruptions, and returns real-time bus, tram and metro departures.
 
 ## What is included
 
-- A combined MCP endpoint at `/mcp` and domain endpoint at `/mcp/groceries`
+- A combined MCP endpoint at `/mcp` and domain endpoints at `/mcp/groceries` and `/mcp/ov`
 - Plain JSON discovery and invocation routes under `/v1`
 - A server-rendered landing page compiled with Tailwind CSS 4
 - An install picker covering eight MCP clients, on the landing page and every tool page
@@ -22,6 +22,8 @@ The first is `mcp-groceries`, which searches the current Dutch grocery catalog, 
 - Shared versions managed through the pnpm workspace catalog
 
 There is deliberately no authentication. The immutable operation registry is created once per Worker isolate, and most tools are pure reads over a snapshot in R2. Stateful infrastructure is added only when a tool has a real persistence requirement: saved shopping lists use a Durable Object keyed by an anonymous bearer `listKey`, which is tied to no account and no MCP session.
+
+Where a tool must reach a live upstream, the credential stays on the server. The public transport tools read the NS Reisinformatie API with a Worker secret that callers never see, bounded by short-TTL upstream caching and a per-IP rate limit; every result carries its source and says whether that source is official.
 
 The pages are React Server Components. Only the install picker ships to the browser as a client component; everything else, including the Parsew SDK that resolves its brand icons, stays on the server. Those icons are the one third-party request the site makes, and a missing one falls back to a monogram.
 
@@ -67,7 +69,7 @@ curl -H 'accept: text/markdown' http://localhost:5173/
 
 Both are generated from `apps/edge/src/landing/install-targets.ts`, so adding a client there updates the page, the Markdown and this workflow at once.
 
-For a domain-only connection, use `http://localhost:5173/mcp/groceries`. Each tool page carries the same picker, already pointed at its own MCP.
+For a domain-only connection, use `http://localhost:5173/mcp/groceries` or `http://localhost:5173/mcp/ov`. Each tool page carries the same picker, already pointed at its own MCP.
 
 ## HTTP routes
 
@@ -75,6 +77,7 @@ For a domain-only connection, use `http://localhost:5173/mcp/groceries`. Each to
 | --- | --- |
 | `POST /mcp` | Combined MCP transport |
 | `POST /mcp/groceries` | Groceries-only MCP transport |
+| `POST /mcp/ov` | Public-transport-only MCP transport |
 | `GET /v1/mcps` | Discover MCPs and their operations |
 | `GET /v1/tools` | Discover all operations |
 | `POST /v1/tools/:name` | Invoke an operation with a JSON body |
@@ -92,11 +95,12 @@ packages/core/           Operation definition and registry
 packages/http-adapter/   Plain JSON transport
 packages/mcp-adapter/    MCP SDK transport
 packages/mcp-groceries/  Independently connectable Dutch groceries MCP
+packages/mcp-ov/         Independently connectable Dutch public transport MCP
 scripts/                 MCP content validation and build compiler
 test/                    Unit and Worker-runtime integration tests
 ```
 
-Independently connectable domain packages use `packages/mcp-<domain>`, for example `mcp-transit` and `mcp-postcode`. Infrastructure packages use descriptive names without that prefix. This keeps the `packages` directory readable as the collection grows.
+Independently connectable domain packages use `packages/mcp-<domain>`, for example `mcp-ov` and `mcp-postcode`. Infrastructure packages use descriptive names without that prefix. This keeps the `packages` directory readable as the collection grows.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the package contract and steps for adding an MCP.
 
