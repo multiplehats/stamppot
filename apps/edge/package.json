@@ -9,6 +9,7 @@
     "@stamppot/http-adapter": "workspace:*",
     "@stamppot/mcp-adapter": "workspace:*",
     "@stamppot/mcp-calendar": "workspace:*",
+    "@stamppot/mcp-groceries": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "rsc-html-stream": "catalog:"

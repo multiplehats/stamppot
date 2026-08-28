@@ -12,5 +12,10 @@
     "target": "ES2022",
     "types": ["node", "vite/client"]
   },
-  "include": ["build/**/*.ts", "vite.config.ts", "vitest.config.ts"]
+  "include": [
+    "build/**/*.ts",
+    "scripts/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
 }

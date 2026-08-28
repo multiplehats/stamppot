@@ -1,7 +1,10 @@
+import { env as bindings } from "cloudflare:workers";
 import { OperationRegistry } from "@stamppot/core";
 import { handleHttpToolsRequest } from "@stamppot/http-adapter";
 import { createRegistryMcpHandler } from "@stamppot/mcp-adapter";
 import { calendarMcp } from "@stamppot/mcp-calendar";
+import { createGroceriesMcp } from "@stamppot/mcp-groceries";
+import { createCloudflareGroceriesDependencies } from "@stamppot/mcp-groceries/cloudflare";
 import { toolContent } from "./landing/content";
 import {
   renderMarkdown,
@@ -13,7 +16,10 @@ import { pageUrl } from "./landing/routes";
 
 const SERVER_VERSION = "0.1.0";
 const TOOL_PAGE_PATTERN = /^\/tools\/([a-z][a-z0-9_]*)$/;
-const registry = new OperationRegistry([calendarMcp]);
+const groceriesMcp = createGroceriesMcp(
+  createCloudflareGroceriesDependencies(() => bindings)
+);
+const registry = new OperationRegistry([calendarMcp, groceriesMcp]);
 const toolCatalog = toolContent(registry);
 
 const combinedMcpHandler = createRegistryMcpHandler(registry, {
@@ -28,6 +34,16 @@ const calendarMcpHandler = createRegistryMcpHandler(registry, {
   serverName: "stamppot-calendar",
   serverVersion: SERVER_VERSION,
 });
+
+const groceriesMcpHandler = createRegistryMcpHandler(registry, {
+  mcp: groceriesMcp,
+  route: "/mcp/groceries",
+  serverName: "stamppot-groceries",
+  serverVersion: SERVER_VERSION,
+});
+
+// biome-ignore lint/performance/noBarrelFile: Wrangler discovers Durable Object classes from the Worker entrypoint.
+export { ShoppingListObject } from "@stamppot/mcp-groceries/cloudflare";
 
 function withSecurityHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
@@ -98,6 +114,9 @@ export default {
     }
     if (url.pathname === "/mcp/calendar") {
       return withSecurityHeaders(await calendarMcpHandler(request, env, ctx));
+    }
+    if (url.pathname === "/mcp/groceries") {
+      return withSecurityHeaders(await groceriesMcpHandler(request, env, ctx));
     }
 
     if (request.method === "OPTIONS" && url.pathname.startsWith("/v1/")) {

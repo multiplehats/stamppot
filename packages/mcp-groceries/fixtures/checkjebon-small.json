@@ -1,0 +1,78 @@
+[
+  {
+    "n": "ah",
+    "c": "Albert Heijn Synthetic",
+    "u": "https://example.test/ah/",
+    "i": "https://example.test/ah-logo.svg",
+    "d": [
+      { "n": "Cola classic", "l": "cola-1500", "p": 2.4, "s": "1,5 l" },
+      { "n": "Chips naturel", "l": "chips-250", "p": 2, "s": "250 g" },
+      { "n": "Bloem tarwe", "l": "bloem-1000", "p": 1, "s": "1 kg" },
+      { "n": "Suiker kristal", "l": "suiker-1000", "p": 1.4, "s": "1 kg" },
+      { "n": "Boter room", "l": "boter-250", "p": 2.5, "s": "250 g" },
+      {
+        "n": "Vrije uitloop eieren",
+        "l": "eieren-6",
+        "p": 2.4,
+        "s": "6 stuks"
+      },
+      {
+        "n": "Papieren borden wit",
+        "l": "borden-20",
+        "p": 1.5,
+        "s": "20 stuks"
+      },
+      { "n": "Servetten wit", "l": "servetten-40", "p": 2.2, "s": "40 stuks" },
+      { "n": "Shampoo budget", "l": "shampoo-250", "p": 1.5, "s": "250 ml" },
+      { "n": "Shampoo familie", "l": "shampoo-500", "p": 2.5, "s": "500 ml" },
+      {
+        "n": "Shampoo verrassingspakket",
+        "l": "shampoo-pakket",
+        "p": 0.99,
+        "s": "per pakket"
+      },
+      { "n": "Exact ratio soap", "l": "ratio-soap-333", "p": 1, "s": "333 ml" },
+      { "n": "Oracle comparison", "l": "oracle-mass", "p": 2, "s": "1 kg" },
+      { "n": "Oracle comparison", "l": "oracle-volume", "p": 1.8, "s": "1 l" },
+      {
+        "n": "Oracle comparison",
+        "l": "oracle-each",
+        "p": 1.6,
+        "s": "10 stuks"
+      }
+    ]
+  },
+  {
+    "n": "jumbo",
+    "c": "Jumbo Synthetic",
+    "u": "https://example.test/jumbo/",
+    "i": "https://example.test/jumbo-logo.svg",
+    "d": [
+      { "n": "Cola classic", "l": "cola-2000", "p": 2.8, "s": "2 l" },
+      { "n": "Chips naturel", "l": "chips-300", "p": 2.1, "s": "300 g" },
+      { "n": "Bloem tarwe", "l": "bloem-1000", "p": 1.6, "s": "1 kg" },
+      { "n": "Suiker kristal", "l": "suiker-750", "p": 1.1, "s": "750 g" },
+      { "n": "Boter room", "l": "boter-500", "p": 4.8, "s": "500 g" },
+      {
+        "n": "Vrije uitloop eieren",
+        "l": "eieren-12",
+        "p": 4.2,
+        "s": "12 stuks"
+      },
+      {
+        "n": "Papieren borden wit",
+        "l": "borden-30",
+        "p": 3.5,
+        "s": "30 stuks"
+      },
+      { "n": "Servetten wit", "l": "servetten-20", "p": 0.9, "s": "20 stuks" },
+      { "n": "Shampoo compact", "l": "shampoo-200", "p": 1.4, "s": "200 ml" },
+      {
+        "n": "Exact ratio soap",
+        "l": "ratio-soap-500",
+        "p": 1.5,
+        "s": "500 ml"
+      }
+    ]
+  }
+]

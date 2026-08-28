@@ -13,6 +13,37 @@
   "assets": {
     "directory": "./public"
   },
+  "r2_buckets": [
+    {
+      "binding": "GROCERIES_CATALOG",
+      "bucket_name": "stamppot-groceries-catalog",
+      "jurisdiction": "eu"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SHOPPING_LISTS",
+        "class_name": "ShoppingListObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ShoppingListObject"]
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "SHOPPING_LIST_WRITES",
+      "namespace_id": "1763268921",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
