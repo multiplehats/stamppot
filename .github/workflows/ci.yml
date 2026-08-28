@@ -90,7 +90,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Deploy Worker to the Personal account
-        run: pnpm deploy
+        run: pnpm run deploy
         env:
           CLOUDFLARE_ACCOUNT_ID: d61f96f2a058dbe3857d567eb1779c94
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
