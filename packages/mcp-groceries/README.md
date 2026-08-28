@@ -1,16 +1,16 @@
 # `@stamppot/mcp-groceries`
 
-Transport-neutral operations for current Dutch grocery retrieval and optional anonymous shopping lists.
+Transportneutrale operaties voor het ophalen van actuele Nederlandse boodschappen en optionele anonieme boodschappenlijsten.
 
-The MCP exposes exactly four tools:
+De MCP biedt precies vier tools:
 
-- `find_grocery_options` searches real packages and distinguishes checkout price from compatible unit value.
-- `plan_grocery_basket` rounds targets to packages, compares bounded retailer combinations, reports unmatched lines, and returns unpinned `replayInput` for current-price follow-ups.
-- `get_shopping_list` retrieves one bounded saved document using its bearer `listKey`.
-- `save_shopping_list` creates or replaces the complete document with last-write-wins semantics.
+- `find_grocery_options` doorzoekt echte verpakkingen en onderscheidt de kassaprijs van de vergelijkbare waarde per eenheid.
+- `plan_grocery_basket` rondt doelen af op verpakkingen, vergelijkt begrensde combinaties van winkels, meldt niet-gematchte regels en geeft een ongepinde `replayInput` terug voor vervolgvragen met actuele prijzen.
+- `get_shopping_list` haalt één begrensd opgeslagen document op met de bijbehorende bearer `listKey`.
+- `save_shopping_list` maakt of vervangt het complete document met last-write-wins-semantiek.
 
-Catalog data comes from [Checkjebon](https://github.com/supermarkt/checkjebon) under the MIT licence. Prices are indicative snapshots, may differ by location or checkout time, and do not guarantee inventory.
+Catalogusgegevens komen van [Checkjebon](https://github.com/supermarkt/checkjebon) onder de MIT-licentie. Prijzen zijn indicatieve momentopnames, kunnen per locatie of afrekenmoment verschillen en zeggen niets over voorraad.
 
-Saved lists are separate from quotes and catalog data. A random 128-bit `listKey` grants access to exactly one list, is not tied to an account or MCP session, and cannot be recovered if lost. Read before replacing an existing document and retain every line the user still wants.
+Opgeslagen lijsten staan los van offertes en catalogusgegevens. Een willekeurige 128-bit `listKey` geeft toegang tot precies één lijst, is niet gekoppeld aan een account of MCP-sessie en kan niet worden hersteld als hij kwijtraakt. Lees eerst voordat je een bestaand document vervangt, en behoud elke regel die de gebruiker nog wil.
 
-Use the domain endpoint at `/mcp/groceries`. See the [self-hosting runbook](../../docs/runbooks/groceries-self-hosting.md) for local catalog sync and Cloudflare resource setup.
+Gebruik het domein-endpoint op `/mcp/groceries`. Zie het [runbook voor zelfhosting](../../docs/runbooks/groceries-self-hosting.md) voor het lokaal synchroniseren van de catalogus en het opzetten van Cloudflare-resources.

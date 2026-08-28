@@ -66,15 +66,17 @@ describe("Stamppot Worker", () => {
 
     expect(html.status).toBe(200);
     expect(html.headers.get("content-type")).toContain("text/html");
-    expect(htmlBody).toContain("Find current Dutch grocery options");
+    expect(htmlBody).toContain("Actuele Nederlandse boodschappenopties vinden");
     expect(htmlBody).toContain(
       '<link href="https://stamppot.test/tools/find_grocery_options" rel="canonical"/>'
     );
     expect(htmlBody).toContain('type="application/ld+json"');
     expect(markdown.headers.get("content-type")).toContain("text/markdown");
-    expect(markdownBody).toContain("# Find current Dutch grocery options");
-    expect(markdownBody).toContain("## Agent workflow");
-    expect(markdownBody).not.toContain("category: groceries");
+    expect(markdownBody).toContain(
+      "# Actuele Nederlandse boodschappenopties vinden"
+    );
+    expect(markdownBody).toContain("## Werkwijze voor agents");
+    expect(markdownBody).not.toContain("category: boodschappen");
   });
 
   it("publishes tool pages in the sitemap", async () => {
