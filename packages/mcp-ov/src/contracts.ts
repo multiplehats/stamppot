@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  MAX_STOP_CODE_CHARACTERS,
   MAX_STOP_NAME_CHARACTERS,
   NS_SOURCE,
   OVAPI_SOURCE,
@@ -19,7 +20,17 @@ export const UPSTREAM_RETRY_AFTER_SECONDS = 60;
 
 const AMSTERDAM_TIME_ZONE = "Europe/Amsterdam";
 const STATION_CODE_PATTERN = /^[A-Za-z0-9]{2,10}$/;
-const STOP_AREA_CODE_PATTERN = /^[A-Za-z0-9_-]{2,20}$/;
+/**
+ * OVapi codes are not restricted to alphanumerics. Eleven of the 4,599 published
+ * stop areas carry a space, punctuation or an accented letter — among them
+ * Rotterdam Centraal perron F (`C.S.`) and Breda Centraal Station W (`Bd CS`) —
+ * and two are a single character. Rejecting those made `find_ov_stop` hand back
+ * codes `get_stop_departures` refused, so the rule admits them while still
+ * excluding anything that could reshape a URL path. The repetition bound is
+ * `MAX_STOP_CODE_CHARACTERS - 1`.
+ */
+const STOP_AREA_CODE_PATTERN =
+  /^[\p{Letter}\p{Number}][\p{Letter}\p{Mark}\p{Number} .&+_-]{0,39}$/u;
 
 /** The upstream answered too slowly, unreachably, or with an unusable body. */
 export class UpstreamUnavailableError extends Error {
@@ -75,7 +86,7 @@ export const stopAreaCodeSchema = z
   .trim()
   .regex(STOP_AREA_CODE_PATTERN)
   .describe(
-    "OVapi stop-area code of 2-20 letters, digits, hyphens or underscores, for example '09500'. Resolve it with find_ov_stop first; the code is case-sensitive."
+    "OVapi stop-area code of 1-40 characters, for example '09500' or 'C.S.'. A code may contain a space, a dot, an ampersand, a plus or an accented letter. Resolve it with find_ov_stop first and pass the value back verbatim: the code is case-sensitive and must not be normalised."
   );
 
 export const stopKindSchema = z
@@ -156,7 +167,7 @@ export const ovStopSchema = z
     code: z
       .string()
       .min(1)
-      .max(20)
+      .max(MAX_STOP_CODE_CHARACTERS)
       .describe(
         "Code to pass to the follow-up tool named in usableWith. Never guess this value."
       ),

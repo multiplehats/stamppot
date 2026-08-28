@@ -253,5 +253,57 @@
         "TimingPointWheelChairAccessible": "ACCESSIBLE"
       }
     }
+  },
+  "C.S.": {
+    "HA1423": {
+      "Passes": {
+        "NL_20260828_1682_419343_0": {
+          "DataOwnerCode": "NL",
+          "DestinationCode": "TCS-----",
+          "DestinationName50": "Rotterdam Centraal",
+          "ExpectedArrivalTime": "2026-08-28T17:59:00",
+          "ExpectedDepartureTime": "2026-08-28T17:59:36",
+          "FortifyOrderNumber": 0,
+          "GetIn": false,
+          "IsTimingStop": false,
+          "JourneyNumber": 419343,
+          "JourneyPatternCode": 14546525,
+          "JourneyStopType": "INTERMEDIATE",
+          "LastUpdateTimeStamp": "2026-08-28T17:21:32+0200",
+          "Latitude": 51.92331,
+          "LineDirection": 1,
+          "LineName": "Beverwaard - Rotterdam Centraal",
+          "LinePlanningNumber": "1682",
+          "LinePublicNumber": "3",
+          "LocalServiceLevelCode": 20260828,
+          "Longitude": 4.472339,
+          "NumberOfCoaches": 1,
+          "OperationDate": "2026-08-28",
+          "OperatorCode": "RET",
+          "ProductFormulaType": "EMPTY",
+          "SideCode": "F",
+          "StopAreaCode": "C.S.",
+          "TargetArrivalTime": "2026-08-28T17:58:58",
+          "TargetDepartureTime": "2026-08-28T17:58:58",
+          "TimingPointCode": "HA1423",
+          "TimingPointDataOwnerCode": "ALGEMEEN",
+          "TimingPointName": "Rotterdam Centraal perron F",
+          "TimingPointTown": "Rotterdam",
+          "TransportType": "TRAM",
+          "TripStopStatus": "DRIVING",
+          "UserStopCode": "HA1423",
+          "UserStopOrderNumber": 15,
+          "WheelChairAccessible": "UNKNOWN"
+        }
+      },
+      "Stop": {
+        "Latitude": 51.92331,
+        "Longitude": 4.472339,
+        "StopAreaCode": "C.S.",
+        "TimingPointCode": "HA1423",
+        "TimingPointName": "Rotterdam Centraal perron F",
+        "TimingPointTown": "Rotterdam"
+      }
+    }
   }
 }

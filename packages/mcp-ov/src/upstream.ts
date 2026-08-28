@@ -79,18 +79,6 @@ export class MemoryUpstreamCache implements UpstreamCache {
   }
 }
 
-/** A cache that stores nothing, for callers that must always see the upstream. */
-export class NullUpstreamCache implements UpstreamCache {
-  read(_url: string, signal: AbortSignal): Promise<string | undefined> {
-    signal.throwIfAborted();
-    return Promise.resolve(undefined);
-  }
-
-  write(): Promise<void> {
-    return Promise.resolve();
-  }
-}
-
 export interface UpstreamRequest {
   readonly cache: UpstreamCache;
   readonly fetchImplementation?: UpstreamFetch;
@@ -169,8 +157,26 @@ export async function fetchUpstreamJson(
   }
 
   const value = parseUpstreamJson(body);
-  await request.cache.write(request.url, body, request.ttlSeconds);
+  await writeUpstreamCache(request, body);
   return value;
+}
+
+/**
+ * The answer is already in hand by this point, so a cache that refuses the write
+ * must not turn a successful read into an availability failure. Losing the entry
+ * costs a later caller one extra upstream read and nothing else.
+ */
+async function writeUpstreamCache(
+  request: UpstreamRequest,
+  body: string
+): Promise<void> {
+  try {
+    await request.cache.write(request.url, body, request.ttlSeconds);
+  } catch (error) {
+    if (request.signal.aborted) {
+      throw error;
+    }
+  }
 }
 
 function parseUpstreamJson(body: string): unknown {

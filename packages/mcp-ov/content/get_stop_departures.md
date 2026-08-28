@@ -16,7 +16,7 @@ related:
 
 ## Werkwijze voor agents
 
-Zoek de halteplaatscode eerst op met `find_ov_stop` en controleer dat het resultaat `kind: "stop_area"` heeft. Een treinstationcode werkt hier niet; gebruik daarvoor `get_train_departures`.
+Zoek de halteplaatscode eerst op met `find_ov_stop` en controleer dat het resultaat `kind: "stop_area"` heeft. Een treinstationcode werkt hier niet; gebruik daarvoor `get_train_departures`. Neem de code letterlijk over: sommige codes bevatten een punt, een spatie of een accent, zoals `C.S.` voor Rotterdam Centraal perron F.
 
 ```json
 {

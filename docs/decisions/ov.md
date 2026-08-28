@@ -20,6 +20,12 @@ Train data comes from the **NS Reisinformatie API** (`gateway.apiportal.ns.nl/re
 
 The two are not interchangeable and their code spaces are disjoint. An NS station code is never valid for `get_stop_departures` and an OVapi stop-area code is never valid for a train tool. `find_ov_stop` therefore returns a `kind` and an explicit `usableWith` tool list on every result, so an agent cannot silently cross the boundary.
 
+### OVapi codes are not alphanumeric
+
+NS station codes are two to ten letters or digits. OVapi codes are not: eleven of the 4,599 published stop areas carry a space, a dot, an ampersand, a plus or an accented letter, and two are a single character. `C.S.` is Rotterdam Centraal perron F and `Bd CS` is Breda Centraal Station W, so this is not a tail worth dropping. `get_stop_departures` therefore accepts one to forty characters beginning with a letter or digit rather than a narrow slug, and the client percent-encodes the code into the request path — verified against the live endpoint for `C.S.`, `Bd CS` and `NmBlé`, each of which is echoed back verbatim as the response's top-level key.
+
+The rule that matters is the invariant, not the character class: every code the published snapshot can hand out must be one the tool named in `usableWith` accepts. A narrower input rule made `find_ov_stop` return codes its own follow-up tool rejected with `invalid_input`, which is worse than returning nothing. `MAX_STOP_CODE_CHARACTERS` is the single bound the snapshot record, the public result and the input rule all share, and the build test asserts the invariant across every published record.
+
 ### OVapi is reachable only over plain HTTP
 
 `https://v0.ovapi.nl/` presents a certificate issued for `1313.nl`, whose subject alternative names are `1313.nl`, `iepenbierferfier.frl`, `iepenbierferfier.nl` and their `www` forms. None of those hosts serve the OVapi paths — they answer 404 — and neither does `ovapi.nl`. Only the `v0` virtual host serves the data, and only its plain-HTTP origin validates.
@@ -39,6 +45,7 @@ This is the repository's first MCP that reaches an upstream from a tool handler,
 - **`redirect: "manual"`.** workerd rejects `redirect: "error"`, and following a redirect could carry the NS key to another host. A 3xx therefore arrives as a non-ok response and is reported as unavailable.
 - **Permissive upstream schemas.** Each client validates only the fields it reads, with every field optional, then trims prose and caps arrays before the strict output parse. Upstream drift degrades to missing data rather than a parse failure.
 - **Canonical timestamps.** NS and OVapi both emit colon-less UTC offsets such as `+0200`, which ISO 8601 profile validation rejects. Clients rewrite `±HHMM` to `±HH:MM` before the output parse.
+- **A cache write never fails a read.** The upstream answer is already parsed by the time the entry is written, so a cache that refuses the write costs a later caller one extra upstream read and nothing else. Reporting `upstream_unavailable` for a request that succeeded would be a lie about the upstream.
 
 Failure mapping is total and leaks nothing. A network error, timeout, unusable body or unexpected status becomes `upstream_unavailable`. NS answering 400 or 404 to a station-scoped request becomes `unknown_station`. OVapi answering 200 with an empty object — its way of saying "no such stop" — becomes `unknown_stop`. A missing NS key short-circuits to `upstream_unavailable` without a fetch. Anything unmodelled is replaced by a generic error at the operation boundary.
 
@@ -57,6 +64,8 @@ The snapshot merges the OVapi `/stopareacode` dump with NS `/api/v2/stations`, f
 Records are compact tuples of `[kind, code, name, town, normalizedSearchText]`. Measured against the real 4,599-entry OVapi dump the snapshot is about 342 KB, comfortably under the 1 MiB `MAX_STOPS_OBJECT_BYTES` bound, so there is **no sharding**: one `stops/versions/<version>/stops.json` plus one mutable `stops/manifest.json` pointer, published in that order. Sharding is the documented escape hatch if the bound is ever hit; the build hard-fails rather than publishing an oversized object.
 
 Two fields are deliberately absent. The OVapi dump carries **no modality field**, so stop areas report no modality rather than a guess; only NS stations are known to be trains. It also carries a sentinel coordinate — `3.3135424, 47.974766`, in central France — for stops whose location is unknown, including Amsterdam Centraal's `asdcs`. Publishing that would be actively wrong, and a name-to-code resolver does not need coordinates, so **no coordinates are published at all**.
+
+A parsed snapshot is memoised per isolate under its version. The manifest is still read from R2 on every call, so publishing a new version takes effect on the next request rather than on the next isolate; only the parse is skipped, which is the expensive half at roughly ten milliseconds of CPU for 4,600 records. That matters because `find_ov_stop` reaches no upstream and therefore consumes no rate limiter, so the parse would otherwise repeat on every authless call.
 
 The bucket belongs to this source boundary alone, following the ownership rule established for groceries: publisher, provenance, retention and credentials travel together.
 

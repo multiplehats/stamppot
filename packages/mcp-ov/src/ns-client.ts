@@ -45,7 +45,10 @@ const NS_API_KEY_HEADER = "Ocp-Apim-Subscription-Key";
 /**
  * NS answers a rejected station parameter with 400 on the trip and departure
  * endpoints and with 404 on the per-station disruption endpoint. Every other
- * status is an availability problem, never a caller mistake.
+ * status is an availability problem, never a caller mistake. The mapping applies
+ * only to a request that names a station: the national disruption list takes no
+ * station, so answering it with `unknown_station` would send a caller off to
+ * re-resolve a code it never supplied.
  */
 const UNKNOWN_STATION_STATUSES = new Set([400, 404]);
 const MAX_UPSTREAM_ITEMS = 200;
@@ -163,6 +166,14 @@ const nsDisruptionSchema = z
   .loose();
 
 const nsDisruptionsResponseSchema = z.array(nsDisruptionSchema);
+
+interface NsReadRequest {
+  readonly context: OvCallContext;
+  /** Only a request that names a station can be answered `unknown_station`. */
+  readonly stationScoped: boolean;
+  readonly ttlSeconds: number;
+  readonly url: string;
+}
 
 export interface NsClientOptions {
   readonly apiKey: () => string | undefined;
@@ -373,11 +384,12 @@ export class NsClient implements TrainTravelService {
     }
     url.searchParams.set("lang", "nl");
 
-    const value = await this.#read(
-      url.toString(),
-      PLANNING_CACHE_TTL_SECONDS,
-      context
-    );
+    const value = await this.#read({
+      context,
+      stationScoped: true,
+      ttlSeconds: PLANNING_CACHE_TTL_SECONDS,
+      url: url.toString(),
+    });
     const parsed = nsTripsResponseSchema.safeParse(value);
     if (!parsed.success) {
       throw new UpstreamUnavailableError();
@@ -402,11 +414,12 @@ export class NsClient implements TrainTravelService {
     }
     url.searchParams.set("lang", "nl");
 
-    const value = await this.#read(
-      url.toString(),
-      DEPARTURES_CACHE_TTL_SECONDS,
-      context
-    );
+    const value = await this.#read({
+      context,
+      stationScoped: true,
+      ttlSeconds: DEPARTURES_CACHE_TTL_SECONDS,
+      url: url.toString(),
+    });
     const parsed = nsDeparturesResponseSchema.safeParse(value);
     if (!parsed.success) {
       throw new UpstreamUnavailableError();
@@ -434,11 +447,12 @@ export class NsClient implements TrainTravelService {
       url.searchParams.set("isActive", input.activeOnly ? "true" : "false");
     }
 
-    const value = await this.#read(
-      url.toString(),
-      PLANNING_CACHE_TTL_SECONDS,
-      context
-    );
+    const value = await this.#read({
+      context,
+      stationScoped: input.station !== undefined,
+      ttlSeconds: PLANNING_CACHE_TTL_SECONDS,
+      url: url.toString(),
+    });
     const parsed = nsDisruptionsResponseSchema.safeParse(value);
     if (!parsed.success) {
       throw new UpstreamUnavailableError();
@@ -460,11 +474,7 @@ export class NsClient implements TrainTravelService {
     };
   }
 
-  async #read(
-    url: string,
-    ttlSeconds: number,
-    context: OvCallContext
-  ): Promise<unknown> {
+  async #read(request: NsReadRequest): Promise<unknown> {
     const apiKey = this.#apiKey();
     if (apiKey === undefined || apiKey === "") {
       throw new UpstreamUnavailableError();
@@ -474,16 +484,17 @@ export class NsClient implements TrainTravelService {
         cache: this.#cache,
         fetchImplementation: this.#fetchImplementation,
         headers: { [NS_API_KEY_HEADER]: apiKey },
-        signal: context.signal,
+        signal: request.context.signal,
         timeoutMs: NS_TIMEOUT_MS,
-        ttlSeconds,
-        url,
+        ttlSeconds: request.ttlSeconds,
+        url: request.url,
       });
     } catch (error) {
-      if (context.signal.aborted) {
+      if (request.context.signal.aborted) {
         throw error;
       }
       if (
+        request.stationScoped &&
         error instanceof UpstreamStatusError &&
         UNKNOWN_STATION_STATUSES.has(error.status)
       ) {

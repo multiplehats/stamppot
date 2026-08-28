@@ -43,7 +43,7 @@ export {
   STOPS_MANIFEST_KEY,
 } from "./stops-format";
 export type { UpstreamCache, UpstreamFetch } from "./upstream";
-export { MemoryUpstreamCache, NullUpstreamCache } from "./upstream";
+export { MemoryUpstreamCache } from "./upstream";
 
 export function createOvMcp(dependencies: OvMcpDependencies): McpDefinition {
   return defineMcp({

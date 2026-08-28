@@ -21,6 +21,7 @@ import {
   MemoryStopsObjectStore,
   StopDirectory,
 } from "../packages/mcp-ov/src/stops-directory";
+import { STOPS_MANIFEST_KEY } from "../packages/mcp-ov/src/stops-format";
 
 const NOW = new Date("2026-08-28T14:00:00.000Z");
 
@@ -71,13 +72,17 @@ function failingDirectory(error: Error): StopDirectoryService {
   return { search: () => Promise.reject(error) };
 }
 
-async function memoryDirectory(): Promise<StopDirectory> {
+async function memoryStopsStore(): Promise<MemoryStopsObjectStore> {
   const artifacts = await buildStopsArtifacts({
     nsStations: JSON.parse(stationsText) as unknown,
     observedAt: new Date("2026-08-27T08:15:30.000Z"),
     ovApiStopAreas: JSON.parse(stopAreasText) as unknown,
   });
-  return new StopDirectory(MemoryStopsObjectStore.fromArtifacts(artifacts));
+  return MemoryStopsObjectStore.fromArtifacts(artifacts);
+}
+
+async function memoryDirectory(): Promise<StopDirectory> {
+  return new StopDirectory(await memoryStopsStore());
 }
 
 function operations(
@@ -151,6 +156,20 @@ describe("public transport operations", () => {
     const { stops } = result;
     expect(stops.length).toBeGreaterThan(0);
     expect(stops.every(({ kind }) => kind === "stop_area")).toBe(true);
+  });
+
+  it("re-reads the manifest but parses the snapshot once", async () => {
+    const store = await memoryStopsStore();
+    const registry = operations({ stopDirectory: new StopDirectory(store) });
+
+    await invoke(registry, "find_ov_stop", { query: "utrecht" });
+    await invoke(registry, "find_ov_stop", { query: "amsterdam" });
+
+    const manifestReads = store.reads.filter(
+      (key) => key === STOPS_MANIFEST_KEY
+    );
+    expect(manifestReads).toHaveLength(2);
+    expect(store.reads).toHaveLength(manifestReads.length + 1);
   });
 
   it("returns an empty list rather than an error for an unmatched query", async () => {

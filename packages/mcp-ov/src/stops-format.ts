@@ -3,6 +3,7 @@ import { z } from "zod";
 export const STOPS_FORMAT_VERSION = 1;
 export const MAX_STOPS_OBJECT_BYTES = 1024 * 1024;
 export const MAX_STOP_NAME_CHARACTERS = 200;
+export const MAX_STOP_CODE_CHARACTERS = 40;
 export const MAX_SNAPSHOT_STOPS = 50_000;
 export const STOPS_MANIFEST_KEY = "stops/manifest.json";
 
@@ -65,7 +66,7 @@ export const stopKindCodeSchema = z.union([
 /** `[kind, code, name, town, normalizedSearchText]`. */
 export const stopRecordSchema = z.tuple([
   stopKindCodeSchema,
-  z.string().min(1).max(40),
+  z.string().min(1).max(MAX_STOP_CODE_CHARACTERS),
   z.string().min(1).max(MAX_STOP_NAME_CHARACTERS),
   z.string().max(MAX_STOP_NAME_CHARACTERS),
   z
@@ -152,7 +153,12 @@ export const ovApiStopAreasSourceSchema = z.record(
   z.string(),
   z
     .object({
-      StopAreaCode: z.string().trim().min(1).max(40).optional(),
+      StopAreaCode: z
+        .string()
+        .trim()
+        .min(1)
+        .max(MAX_STOP_CODE_CHARACTERS)
+        .optional(),
       TimingPointName: z.string().optional(),
       TimingPointTown: z.string().optional(),
     })

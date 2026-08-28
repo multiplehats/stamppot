@@ -83,6 +83,13 @@
     "TimingPointName": "Station",
     "TimingPointTown": "Alphen a/d Rijn"
   },
+  "C.S.": {
+    "Latitude": 51.92331,
+    "Longitude": 4.472339,
+    "StopAreaCode": "C.S.",
+    "TimingPointName": "Rotterdam Centraal perron F",
+    "TimingPointTown": "Rotterdam"
+  },
   "GtcBeu": {
     "Latitude": 47.974766,
     "Longitude": 3.3135424,

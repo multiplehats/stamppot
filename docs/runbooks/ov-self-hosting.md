@@ -71,6 +71,23 @@ The sync validates both sources and every generated object, uploads the immutabl
 
 The snapshot is bounded to 1 MiB. A future source that exceeds that bound is rejected and the previously published manifest stays live; splitting the snapshot into shards is the documented remedy.
 
+### Local development uses the fixtures
+
+`pnpm dev` runs `ov:sync --local --if-empty` against `packages/mcp-ov/fixtures/`, which
+holds 5 Dutch stations and 16 stop areas — enough to exercise every tool, but
+`find_ov_stop` answers `status: "ok"` with an empty list for anything outside it. To
+develop against the real directory, publish it into the local Miniflare state instead:
+
+```bash
+pnpm ov:sync --local \
+  --ovapi-source http://v0.ovapi.nl/stopareacode \
+  --ns-source packages/mcp-ov/fixtures/ns-stations-small.json
+```
+
+Drop `--ns-source` to read live NS stations too, which needs `NS_API_KEY` in the
+environment. Omit `--if-empty` as shown, or the run is skipped because the fixture
+manifest is already there.
+
 Confirm that the manifest exists without exposing the bucket publicly:
 
 ```bash

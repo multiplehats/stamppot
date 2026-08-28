@@ -186,6 +186,32 @@ describe("Stamppot Worker public transport routes", () => {
     expect(upstreamCalls[0]).toBe(`${OVAPI_HOST}/stopareacode/09500`);
   });
 
+  it("resolves a punctuated stop-area code and reads it from cache twice", async () => {
+    stubUpstreams([
+      [`${OVAPI_HOST}/stopareacode/`, () => json(stopDeparturesText)],
+    ]);
+
+    const found = await callTool("find_ov_stop", {
+      kinds: ["stop_area"],
+      query: "rotterdam centraal",
+    });
+    const { stops } = await found.json<{ stops: { code: string }[] }>();
+    const code = stops
+      .map((stop) => stop.code)
+      .find((candidate) => candidate === "C.S.");
+    expect(code).toBe("C.S.");
+
+    const first = await callTool("get_stop_departures", { stopAreaCode: code });
+    const second = await callTool("get_stop_departures", {
+      stopAreaCode: code,
+    });
+
+    expect(first.status).toBe(200);
+    await expect(first.json()).resolves.toMatchObject({ status: "ok" });
+    await expect(second.json()).resolves.toMatchObject({ status: "ok" });
+    expect(upstreamCalls).toEqual([`${OVAPI_HOST}/stopareacode/C.S.`]);
+  });
+
   it("answers upstream_unavailable in band when the upstream cannot be reached", async () => {
     stubUpstreams([]);
 

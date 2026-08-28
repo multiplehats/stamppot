@@ -30,6 +30,8 @@ Elk resultaat heeft een `kind` en een `usableWith`-lijst. Een `train_station` we
 
 Verzin nooit zelf een code. Is de zoekterm dubbelzinnig, zoals “Centraal Station”, leg de kandidaten dan met naam en plaats aan de gebruiker voor in plaats van er één te kiezen.
 
+Geef een code letterlijk door aan de volgende tool. Een halteplaatscode is niet altijd alfanumeriek: `C.S.` is Rotterdam Centraal perron F en `Bd CS` is Breda Centraal Station W. Laat punten, spaties en accenten staan en verander niets aan de hoofdletters.
+
 ## Bron, versheid en fouten
 
 De haltelijst is een gepubliceerde momentopname die treinstations uit de [NS Reisinformatie API](https://apiportal.ns.nl/) combineert met halteplaatsen uit [OVapi](http://ovapi.nl/), een onofficiële bron. Het antwoord bevat de momentopnameversie en het observatietijdstip. De lijst bevat geen actuele vertrektijden; die haal je met de vertrektools op.

@@ -150,6 +150,13 @@ function publicStop(ranked: RankedStop): OvStop {
 
 export class StopDirectory implements StopDirectoryService {
   readonly #store: StopsObjectStore;
+  /**
+   * A published snapshot is immutable, so parsing one costs the isolate roughly
+   * ten milliseconds of CPU that every later call can skip. The manifest is
+   * still read on every call, so publishing a new version takes effect on the
+   * next request rather than on the next isolate.
+   */
+  #parsed: { snapshot: StopsSnapshot; version: string } | undefined;
 
   constructor(store: StopsObjectStore) {
     this.#store = store;
@@ -214,6 +221,9 @@ export class StopDirectory implements StopDirectoryService {
     manifest: StopsManifest,
     context: OvCallContext
   ): Promise<StopsSnapshot> {
+    if (this.#parsed?.version === manifest.currentVersion) {
+      return this.#parsed.snapshot;
+    }
     if (manifest.snapshot.byteLength > MAX_STOPS_OBJECT_BYTES) {
       return throwDirectoryUnavailable();
     }
@@ -233,6 +243,7 @@ export class StopDirectory implements StopDirectoryService {
     ) {
       return throwDirectoryUnavailable();
     }
+    this.#parsed = { snapshot: parsed.data, version: manifest.currentVersion };
     return parsed.data;
   }
 }

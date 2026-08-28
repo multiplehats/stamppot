@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import stationsText from "../packages/mcp-ov/fixtures/ns-stations-small.json?raw";
 import stopAreasText from "../packages/mcp-ov/fixtures/ovapi-stopareas-small.json?raw";
 import {
+  stationCodeSchema,
+  stopAreaCodeSchema,
+} from "../packages/mcp-ov/src/contracts";
+import {
   buildStopsArtifacts,
   publishStopsArtifacts,
   type StopsArtifactObject,
@@ -11,6 +15,7 @@ import {
 import {
   MAX_STOPS_OBJECT_BYTES,
   STOPS_MANIFEST_KEY,
+  TRAIN_STATION_KIND,
 } from "../packages/mcp-ov/src/stops-format";
 
 const nsStations = JSON.parse(stationsText) as unknown;
@@ -69,6 +74,25 @@ describe("stops snapshot build and publication", () => {
     expect(codes).not.toContain("BRUX");
     expect(artifacts.stationCount).toBe(5);
     expect(new Set(codes).size).toBe(codes.length);
+  });
+
+  it("publishes only codes the tool that consumes them accepts", async () => {
+    const artifacts = await build();
+    const snapshot = JSON.parse(
+      new TextDecoder().decode(artifacts.snapshotObject.body)
+    ) as { records: [number, string, string, string, string][] };
+
+    // Rotterdam Centraal perron F, one of the eleven published stop areas whose
+    // code carries punctuation, a space or an accented letter.
+    expect(snapshot.records.map((record) => record[1])).toContain("C.S.");
+    for (const [kind, code] of snapshot.records) {
+      const schema =
+        kind === TRAIN_STATION_KIND ? stationCodeSchema : stopAreaCodeSchema;
+      expect({ accepted: schema.safeParse(code).success, code }).toEqual({
+        accepted: true,
+        code,
+      });
+    }
   });
 
   it("rejects empty or malformed source data", async () => {

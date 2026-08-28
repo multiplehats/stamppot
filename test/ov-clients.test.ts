@@ -215,6 +215,43 @@ describe("NS client", () => {
     ).rejects.toBeInstanceOf(UpstreamUnavailableError);
   });
 
+  it("keeps a good answer when the cache refuses to store it", async () => {
+    const { calls, fetchImplementation } = recordingFetch(() =>
+      jsonResponse(departuresText)
+    );
+    const client = new NsClient({
+      apiKey: () => "test-ns-key",
+      cache: {
+        read: () => Promise.resolve(undefined),
+        write: () => Promise.reject(new Error("cache put refused")),
+      },
+      fetchImplementation,
+    });
+
+    const result = await client.departures(
+      { limit: 2, station: "ut" },
+      context()
+    );
+
+    expect(result.departures).toHaveLength(2);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("only reports an unknown station when the request named one", async () => {
+    const national = nsClient(() => jsonResponse("{}", 400));
+    const perStation = nsClient(() => jsonResponse(unknownStationText, 404));
+
+    await expect(
+      national.client.disruptions({ activeOnly: true }, context())
+    ).rejects.toBeInstanceOf(UpstreamUnavailableError);
+    await expect(
+      perStation.client.disruptions(
+        { activeOnly: true, station: "zzzz" },
+        context()
+      )
+    ).rejects.toBeInstanceOf(UnknownStationError);
+  });
+
   it("short-circuits without fetching when no key is configured", async () => {
     const { calls, client } = nsClient(() => jsonResponse(departuresText), {
       apiKey: undefined,
