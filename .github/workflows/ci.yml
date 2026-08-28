@@ -23,7 +23,7 @@ jobs:
       - run: pnpm check
 
   changeset:
-    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'changesets-release/')
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'changeset-release/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
