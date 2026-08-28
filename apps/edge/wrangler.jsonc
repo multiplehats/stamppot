@@ -4,6 +4,12 @@
   "main": "src/worker.ts",
   "compatibility_date": "2026-08-27",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "stamppot.dev",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./public"
   },
