@@ -1,136 +1,29 @@
 @import "tailwindcss";
-@source "./render.ts";
+@import "@heroui/styles";
 
-@theme {
-  /* Deck system — the landing page and the shared dark shell.
-     Cards on felt: a green baize table, white card faces, three accent colours
-     used as borders and type rather than fills. The ground is the literal
-     colour of a card table, so --color-felt is a description, not a metaphor.
-     See DESIGN.md. */
-  --color-felt: #1b4235;
-  --color-card: #ffffff;
-  --color-signal-red: #fe2f2f;
-  --color-royal-violet: #7333f1;
-  --color-antique-gold: #cad238;
-  --color-lemon: #e5e572;
-  --color-lavender: #e3d9fa;
-  --color-cobalt: #0f51f9;
-  --color-sky: #a0e9ff;
-  --color-bubblegum: #ffa0f0;
-  --color-mint: #b4ff91;
-  --color-tangerine: #ff9559;
-
-  /* Deck greys — five steps, each tied to the surface it sits on.
-     The two that sit on white stay truly neutral. The three that sit on the
-     baize are tinted from it and lightened, because a lifted ground costs
-     contrast that pure greys no longer clear: #888 on baize is 3.8:1. */
-  --color-charcoal: #444444;
-  --color-graphite: #666666;
-  --color-ash: #8fa39b;
-  --color-smoke: #a3b5ae;
-  --color-hairline: #2c5446;
-
-  /* Deck typography. No webfont is loaded: Inter when the reader has it,
-     Helvetica or Arial otherwise, which is the face the style is drawn from.
-     Never set font-synthesis: none here — the design is uniformly weight 800
-     and the fallbacks have no real 800, so synthesis is what carries it. */
-  --font-display: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-body: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-
-  /* Deck type scale. Sizes are fluid and top out at the artboard value at
-     1440px; line height rides along as a ratio so it survives the clamp. */
-  --text-caption: 12px;
-  --text-caption--line-height: 1.5;
-  --text-body-sm: 14px;
-  --text-body-sm--line-height: 1.714;
-  --text-body: 16px;
-  --text-body--line-height: 1.625;
-  --text-subheading: 20px;
-  --text-subheading--line-height: 1.5;
-  --text-subheading--letter-spacing: -0.01em;
-  --text-heading-sm: 24px;
-  --text-heading-sm--line-height: 1.5;
-  --text-heading: 28px;
-  --text-heading--line-height: 1.286;
-  --text-heading--letter-spacing: -0.01em;
-  --text-heading-lg: clamp(28px, 2.8vw, 40px);
-  --text-heading-lg--line-height: 1.075;
-  --text-heading-lg--letter-spacing: -0.02em;
-  --text-display-sm: clamp(32px, 3.8vw, 55px);
-  --text-display-sm--line-height: 1.055;
-  --text-display-sm--letter-spacing: -0.02em;
-  --text-display: clamp(36px, 4.5vw, 65px);
-  --text-display--line-height: 1;
-  --text-display--letter-spacing: -0.02em;
-  --text-display-lg: clamp(40px, 5.6vw, 80px);
-  --text-display-lg--line-height: 0.975;
-  --text-display-lg--letter-spacing: -0.02em;
-
-  /* Deck shapes. --radius-lg / --radius-xl are Tailwind's own; left alone. */
-  --radius-card: 13px;
-  --radius-card-lg: 20px;
-  --radius-pill: 38px;
-  --radius-pill-lg: 64px;
-  --container-page: 1200px;
-
-  /* Mono. The one role the deck's single face cannot fill: schema keys, ISO
-     timestamps and install commands need columns that line up. */
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-}
-
-@layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body.shell-deck {
-    color: var(--color-card);
-    background-color: var(--color-felt);
-  }
-
-  button,
-  a {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  button:focus-visible,
-  a:focus-visible {
-    outline: 3px solid var(--color-signal-red);
-    outline-offset: 3px;
-  }
-}
-
+/*
+ * The pages are built entirely from HeroUI v3 defaults: its theme variables,
+ * its component classes, and Tailwind utilities that read HeroUI's tokens.
+ * There is no project theme, so there is no `@theme` block here.
+ *
+ * The only rules below are vertical rhythm for compiled Markdown. HeroUI's
+ * `typography-prose` styles every element a tool page emits, but it is written
+ * for prose that already carries margins, so headings and blocks need spacing
+ * added around them.
+ */
 @layer components {
-  /*
-   * The compiled Markdown of a tool page. The build strips the leading h1 —
-   * the page renders the title itself — so this styles h2 downward.
-   *
-   * Body prose is the one place the deck drops to weight 400. The system is
-   * uniformly 800, but a full reference page set in 800 cannot be read, and
-   * the reference caps heavy body copy at 16px anyway. Headings, labels and
-   * code stay heavy; running text does not.
-   */
-  .tool-prose {
-    max-width: var(--container-prose);
-    font-size: 17px;
-    line-height: 1.75;
-    color: var(--color-charcoal);
+  .tool-prose > * + * {
+    margin-top: 1rem;
   }
 
   .tool-prose h2 {
-    padding-top: 2.5rem;
-    margin: 3.5rem 0 0;
-    font-family: var(--font-display);
-    font-size: var(--text-heading-lg);
-    font-weight: 800;
-    line-height: 1.075;
-    color: var(--color-felt);
-    letter-spacing: -0.02em;
-    scroll-margin-top: 2rem;
-    border-top: 2px solid var(--color-felt);
+    padding-top: 2rem;
+    margin-top: 3rem;
+    border-top: 1px solid var(--separator);
   }
 
-  /* The first heading opens the column; it needs no rule above it. */
+  /* The build strips the leading h1, so the first heading opens the column
+     and needs no rule above it. */
   .tool-prose > h2:first-child {
     padding-top: 0;
     margin-top: 0;
@@ -138,87 +31,11 @@
   }
 
   .tool-prose h3 {
-    margin: 2.25rem 0 0;
-    font-family: var(--font-display);
-    font-size: var(--text-heading-sm);
-    font-weight: 800;
-    line-height: 1.3;
-    color: var(--color-felt);
-    letter-spacing: -0.01em;
+    margin-top: 2rem;
   }
 
-  .tool-prose p,
-  .tool-prose ul,
-  .tool-prose ol {
-    margin: 1.25rem 0 0;
-  }
-
-  /* Preflight clears list-style; the deck wants real markers back. */
-  .tool-prose ul {
-    padding-left: 1.35rem;
-    list-style: disc;
-  }
-
-  .tool-prose ol {
-    padding-left: 1.35rem;
-    list-style: decimal;
-  }
-
-  .tool-prose li {
-    margin-top: 0.6rem;
-  }
-
-  .tool-prose li::marker {
-    color: var(--color-felt);
-  }
-
-  .tool-prose strong {
-    font-weight: 800;
-    color: var(--color-felt);
-  }
-
-  .tool-prose a {
-    font-weight: 800;
-    color: var(--color-felt);
-    text-underline-offset: 3px;
-  }
-
-  /* Lemon is a card face, so inline code reads as a chip torn off one. */
-  .tool-prose code {
-    padding: 0.1rem 0.4rem;
-    font-family: var(--font-mono);
-    font-size: 0.85em;
-    color: var(--color-felt);
-    background: var(--color-lemon);
-    border-radius: 5px;
-  }
-
-  .tool-prose pre {
-    margin: 1.75rem 0 0;
-    overflow-x: auto;
-    color: var(--color-card);
-    background: var(--color-felt);
-    border-radius: var(--radius-card);
-  }
-
-  .tool-prose pre code {
-    display: block;
-    padding: 1.5rem;
-    font-size: 14px;
-    line-height: 1.7;
-    color: inherit;
-    background: transparent;
-    border-radius: 0;
-  }
-
-  .tool-command {
-    overflow-wrap: anywhere;
-    white-space: pre-wrap;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
+  .tool-prose h2 + *,
+  .tool-prose h3 + * {
+    margin-top: 0.75rem;
   }
 }

@@ -14,7 +14,9 @@ export function renderMarkdown(
     .map(
       (option) =>
         `### ${option.label}\n\n${
-          option.kind === "config" ? `Add to \`${option.location}\`:` : "Run:"
+          option.kind === "config"
+            ? `Toevoegen aan \`${option.location}\`:`
+            : "Run:"
         }\n\n\`\`\`${option.kind === "config" ? "json" : "bash"}\n${option.snippet}\n\`\`\``
     )
     .join("\n\n");
@@ -25,7 +27,7 @@ export function renderMarkdown(
         `### ${mcp.title}\n\n${mcp.description}\n\n${mcp.operations
           .map(
             (operation) =>
-              `- [\`${operation.name}\`](${origin}/tools/${operation.name}) — ${operation.description}`
+              `- [\`${operation.name}\`](${origin}/tools/${operation.name}): ${operation.description}`
           )
           .join("\n")}`
     )
@@ -33,15 +35,15 @@ export function renderMarkdown(
 
   return `# Stamppot
 
-One endpoint. A whole Dutch kitchen.
+De hele Nederlandse keuken, via hetzelfde endpoint.
 
-Small, dependable MCP servers for Dutch data. Free to use, no account required, and open source.
+Kleine, betrouwbare MCP-servers voor Nederlandse data. Gratis, open source en zonder account.
 
-## Connect
+## Koppelen
 
 ${connect}
 
-## MCPs
+## MCP's
 
 ${mcps}
 
@@ -62,20 +64,20 @@ export function renderToolMarkdown(
   const relatedSection =
     related.length === 0
       ? ""
-      : `\n\n## Related tools\n\n${related
+      : `\n\n## Gerelateerde tools\n\n${related
           .map(
             (relatedTool) =>
-              `- [\`${relatedTool.operationName}\`](${origin}${toolPath(relatedTool.operationName)}) — ${relatedTool.description}`
+              `- [\`${relatedTool.operationName}\`](${origin}${toolPath(relatedTool.operationName)}): ${relatedTool.description}`
           )
           .join("\n")}`;
 
   return `${tool.markdown}
 
-## Connect
+## Koppelen
 
-- Combined MCP: \`${origin}/mcp\`
+- Alle MCP's samen: \`${origin}/mcp\`
 - ${tool.mcpTitle} MCP: \`${origin}/mcp/${tool.mcpId}\`
-- Plain HTTP: \`${origin}/v1/tools/${tool.operationName}\`${relatedSection}
+- HTTP: \`${origin}/v1/tools/${tool.operationName}\`${relatedSection}
 `;
 }
 

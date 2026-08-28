@@ -1,161 +1,183 @@
 "use client";
 
-import { type ReactNode, useCallback, useState } from "react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+  Description,
+  Label,
+  ListBox,
+  Select,
+} from "@heroui/react";
+import { cardVariants } from "@heroui/styles";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { InstallOption } from "./install-targets";
-import { useInstallPicker } from "./use-install-picker";
 
-/**
- * The two surfaces the card is dropped onto: white on the landing hero, felt in
- * a tool page's sidebar. Tailwind reads these statically, so every class is a
- * full string — a tone assembled by interpolation would emit nothing.
- */
-const TONES = {
-  card: {
-    caret: "text-graphite",
-    eyebrow:
-      "font-display font-extrabold text-[12px] text-graphite uppercase tracking-[0.08em]",
-    iconChip: "bg-lemon text-felt",
-    listbox: "bg-card shadow-[0_0_0_2px_var(--color-felt)]",
-    optionActive: "bg-lemon",
-    optionLabel: "text-felt",
-    optionLocation: "text-graphite",
-    panel: "bg-felt",
-    panelCode: "text-card",
-    panelCopy:
-      "text-card shadow-[inset_0_0_0_2px_var(--color-hairline)] hover:bg-card hover:text-felt",
-    panelLabel: "text-ash",
-    panelRule: "border-hairline",
-    surface: "bg-card",
-    trigger:
-      "bg-card text-felt shadow-[inset_0_0_0_2px_var(--color-felt)] hover:bg-felt hover:text-card",
-  },
-  felt: {
-    caret: "text-ash",
-    eyebrow:
-      "font-display font-extrabold text-[12px] text-ash uppercase tracking-[0.08em]",
-    iconChip: "bg-card text-felt",
-    listbox: "bg-felt shadow-[0_0_0_2px_var(--color-hairline)]",
-    optionActive: "bg-card/10",
-    optionLabel: "text-card",
-    optionLocation: "text-smoke",
-    panel: "bg-card",
-    panelCode: "text-felt",
-    panelCopy:
-      "text-felt shadow-[inset_0_0_0_2px_var(--color-felt)] hover:bg-felt hover:text-card",
-    panelLabel: "text-graphite",
-    panelRule: "border-[#ececec]",
-    surface: "bg-felt",
-    trigger:
-      "bg-felt text-card shadow-[inset_0_0_0_2px_var(--color-hairline)] hover:bg-card hover:text-felt",
-  },
-} as const;
+type SelectionValue = number | string;
 
-const MICRO_LABEL =
-  "font-display font-extrabold text-[11px] uppercase leading-[18px] tracking-[0.08em]";
+const COPY_RESET_MS = 1600;
 
-export type InstallTone = keyof typeof TONES;
+const card = cardVariants();
 
 interface InstallCardProps {
-  /** Rotation, width and margin belong to the page, not to the card. */
+  /** Width and margin belong to the page, not to the card. */
   readonly className?: string;
   readonly eyebrow: string;
   readonly options: readonly InstallOption[];
-  readonly tone: InstallTone;
 }
 
 /**
- * A card that shows one install snippet at a time, with a picker for choosing
- * which client it is written for. All behaviour comes from `useInstallPicker`;
- * everything here is presentation.
+ * A card that shows one install snippet at a time, with a HeroUI `Select` for
+ * choosing which client it is written for. The listbox, its keyboard handling
+ * and its ARIA wiring all belong to HeroUI; the only state kept here is which
+ * target is selected and whether the snippet was just copied.
  */
 export function InstallCard({
   className = "",
   eyebrow,
   options,
-  tone,
 }: InstallCardProps): ReactNode {
-  const picker = useInstallPicker(options);
-  const skin = TONES[tone];
-  const { selected } = picker;
+  const [first] = options;
+  const [selectedId, setSelectedId] = useState(first?.id ?? null);
+  const [copied, setCopied] = useState(false);
+  const copyResetRef = useRef<number | undefined>(undefined);
+
+  const selected =
+    options.find((option) => option.id === selectedId) ?? first ?? undefined;
+
+  useEffect(
+    () => () => {
+      if (copyResetRef.current !== undefined) {
+        window.clearTimeout(copyResetRef.current);
+      }
+    },
+    []
+  );
+
+  // HeroUI hands back a react-aria `Key`; every option id here is a string.
+  const onSelectionChange = useCallback(
+    (value: SelectionValue | SelectionValue[] | null) => {
+      const next = Array.isArray(value) ? value[0] : value;
+      setSelectedId(next === undefined || next === null ? null : String(next));
+      setCopied(false);
+    },
+    []
+  );
+
+  const copy = useCallback(async () => {
+    if (selected === undefined) {
+      return;
+    }
+
+    // A browser may refuse the clipboard outright — Firefox without
+    // `dom.events.asyncClipboard.clipboardItem`, a denied permission, an
+    // embedded webview. Swallowing the rejection keeps the button honest: it
+    // stays on "Kopieer" rather than claiming a copy that never happened, and
+    // the snippet is selectable either way.
+    try {
+      await navigator.clipboard.writeText(selected.snippet);
+    } catch {
+      return;
+    }
+    setCopied(true);
+
+    if (copyResetRef.current !== undefined) {
+      window.clearTimeout(copyResetRef.current);
+    }
+    copyResetRef.current = window.setTimeout(() => {
+      setCopied(false);
+    }, COPY_RESET_MS);
+  }, [selected]);
 
   if (selected === undefined) {
     return null;
   }
 
   return (
-    <div
-      className={`rounded-card-lg p-6 text-left max-sm:p-5 ${skin.surface} ${className}`}
-      data-code-block
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className={skin.eyebrow}>{eyebrow}</span>
-        <div className="relative" {...picker.getContainerProps()}>
-          <button
-            className={`flex h-11 items-center gap-[10px] rounded-pill py-1 pr-3 pl-[6px] font-display font-extrabold text-[15px] leading-[20px] ${skin.trigger}`}
-            {...picker.getTriggerProps()}
-          >
-            <BrandIcon option={selected} skin={skin} />
-            <span className="whitespace-nowrap">{selected.label}</span>
-            <Caret className={`shrink-0 ${skin.caret}`} />
-          </button>
-
-          {picker.isOpen ? (
-            <div
-              className={`absolute right-0 z-10 mt-2 flex max-h-[320px] w-[286px] flex-col gap-1 overflow-y-auto rounded-card p-2 max-sm:right-auto max-sm:left-0 ${skin.listbox}`}
-              {...picker.getListboxProps()}
-            >
-              {options.map((option, index) => (
-                <button
-                  className={`flex w-full items-center gap-3 rounded-card px-2 py-2 text-left ${
-                    index === picker.highlightedIndex ? skin.optionActive : ""
-                  }`}
-                  key={option.id}
-                  {...picker.getOptionProps(index)}
-                >
-                  <BrandIcon option={option} skin={skin} />
-                  <span className="flex min-w-0 flex-col">
-                    <span
-                      className={`font-display font-extrabold text-[15px] leading-[20px] ${skin.optionLabel}`}
-                    >
-                      {option.label}
-                    </span>
-                    <span
-                      className={`truncate text-[12px] leading-[18px] ${skin.optionLocation}`}
-                    >
-                      {option.location}
-                    </span>
+    <div className={`${card.base()} ${className}`}>
+      <div
+        className={`${card.header()} flex-row flex-wrap items-center justify-between gap-3`}
+      >
+        <span className="font-medium text-muted text-sm">{eyebrow}</span>
+        <Select
+          className="w-52"
+          onChange={onSelectionChange}
+          value={selectedId}
+        >
+          <Label className="sr-only">Kies je client</Label>
+          <Select.Trigger>
+            <Select.Value>
+              {({ defaultChildren, isPlaceholder, state }) => {
+                const key = state.selectedItems[0]?.key;
+                const item = options.find((option) => option.id === key);
+                if (isPlaceholder || item === undefined) {
+                  return defaultChildren;
+                }
+                return (
+                  <span className="flex min-w-0 items-center gap-2">
+                    <BrandIcon option={item} />
+                    <span className="truncate">{item.label}</span>
                   </span>
-                  {index === picker.selectedIndex ? (
-                    <Tick className={`ml-auto shrink-0 ${skin.optionLabel}`} />
-                  ) : null}
-                </button>
+                );
+              }}
+            </Select.Value>
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {options.map((option) => (
+                <ListBox.Item
+                  id={option.id}
+                  key={option.id}
+                  textValue={option.label}
+                >
+                  <BrandIcon option={option} />
+                  <div className="flex min-w-0 flex-col">
+                    <Label>{option.label}</Label>
+                    <Description>{option.location}</Description>
+                  </div>
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
               ))}
-            </div>
-          ) : null}
-        </div>
+            </ListBox>
+          </Select.Popover>
+        </Select>
       </div>
 
-      <div className={`mt-5 overflow-hidden rounded-card ${skin.panel}`}>
-        <div
-          className={`flex items-center justify-between gap-3 border-b px-5 py-[10px] ${skin.panelRule}`}
-        >
-          <span className={`truncate ${MICRO_LABEL} ${skin.panelLabel}`}>
-            {selected.location}
-          </span>
-          <button
-            className={`shrink-0 cursor-pointer rounded-pill px-[14px] py-[5px] font-display font-extrabold text-[11px] uppercase tracking-[0.08em] ${skin.panelCopy}`}
-            {...picker.getCopyButtonProps()}
-          >
-            {picker.copied ? "copied" : "copy"}
-          </button>
+      <div className={card.content()}>
+        <div className="overflow-hidden rounded-xl bg-default">
+          <div className="flex items-center justify-between gap-3 border-separator border-b px-4 py-2">
+            <span className="truncate font-mono text-muted text-xs">
+              {selected.location}
+            </span>
+            <Button
+              aria-label={
+                copied
+                  ? "Gekopieerd naar klembord"
+                  : `Kopieer de snippet voor ${selected.label}`
+              }
+              onPress={copy}
+              size="sm"
+              variant="ghost"
+            >
+              {copied ? "Gekopieerd" : "Kopieer"}
+            </Button>
+          </div>
+          {/* The card sits in a narrow sidebar on tool pages, so the snippet
+              wraps rather than opening a horizontal scrollbar. */}
+          <pre className="m-0 whitespace-pre-wrap break-words px-4 py-4">
+            <code className="font-mono text-sm leading-6">
+              {selected.snippet}
+            </code>
+          </pre>
         </div>
-        <pre className="m-0 whitespace-pre-wrap break-words px-5 py-[18px]">
-          <code
-            className={`font-mono text-[13.5px] leading-[24px] max-sm:text-[12.5px] ${skin.panelCode}`}
-          >
-            {selected.snippet}
-          </code>
-        </pre>
       </div>
     </div>
   );
@@ -163,85 +185,16 @@ export function InstallCard({
 
 /**
  * The brand icon, or the first letter of the label when Parsew has no key
- * configured or the request fails. A missing icon costs a logo, never a hole.
+ * configured or the request fails. `AvatarFallback` covers both cases on its
+ * own, so a missing icon costs a logo and never a hole.
  */
-function BrandIcon({
-  option,
-  skin,
-}: {
-  readonly option: InstallOption;
-  readonly skin: (typeof TONES)[InstallTone];
-}): ReactNode {
-  const [failed, setFailed] = useState(false);
-  const onError = useCallback(() => setFailed(true), []);
-  const chip = `grid size-8 shrink-0 place-items-center overflow-hidden rounded-full ${skin.iconChip}`;
-
-  if (option.iconUrl === undefined || failed) {
-    return (
-      <span aria-hidden="true" className={chip}>
-        <span className="font-display font-extrabold text-[14px] leading-none">
-          {option.monogram}
-        </span>
-      </span>
-    );
-  }
-
+function BrandIcon({ option }: { readonly option: InstallOption }): ReactNode {
   return (
-    <span aria-hidden="true" className={chip}>
-      {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: onError is a resource event, not a user interaction */}
-      <img
-        alt=""
-        className="size-5 object-contain"
-        height={20}
-        loading="lazy"
-        onError={onError}
-        src={option.iconUrl}
-        width={20}
-      />
-    </span>
-  );
-}
-
-function Caret({ className }: { readonly className: string }): ReactNode {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      fill="none"
-      height="16"
-      viewBox="0 0 16 16"
-      width="16"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M4 6.5L8 10.5L12 6.5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
-function Tick({ className }: { readonly className: string }): ReactNode {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      fill="none"
-      height="16"
-      viewBox="0 0 16 16"
-      width="16"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M3.5 8.5L6.5 11.5L12.5 4.5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
+    <Avatar className="size-6 shrink-0" size="sm">
+      {option.iconUrl === undefined ? null : (
+        <AvatarImage alt="" src={option.iconUrl} />
+      )}
+      <AvatarFallback>{option.monogram}</AvatarFallback>
+    </Avatar>
   );
 }

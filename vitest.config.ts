@@ -21,6 +21,12 @@ export default defineConfig(async () => ({
           import.meta.url
         )
       ),
+      "./style-assets": fileURLToPath(
+        new URL(
+          "./apps/edge/src/landing/style-assets.testing.tsx",
+          import.meta.url
+        )
+      ),
     },
   },
 }));

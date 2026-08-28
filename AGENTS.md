@@ -8,11 +8,16 @@ Every pull request or direct tinkering on main must add a changeset. Use `pnpm c
 
 ## Design
 
-`DESIGN.md` in the repository root is the design reference for anything user-facing under `apps/edge/src/landing/`. Read it before adding or restyling a page, component or token.
+`DESIGN.md` in the repository root is the design reference for anything user-facing under `apps/edge/src/landing/`. Read it before adding or restyling a page or component.
 
-Design tokens live in `apps/edge/src/landing/styles.css`. The `@theme` block there and the token tables in `DESIGN.md` describe the same system, so a token change updates both in the same commit.
+The pages are built from **HeroUI v3** defaults — there is no Stamppot design system and no project theme. `apps/edge/src/landing/styles.css` imports `tailwindcss` and then `@heroui/styles` (that order matters), and owns nothing beyond vertical rhythm for compiled Markdown.
 
-Two systems currently coexist. The **deck** system is the landing page and the shared dark shell, and is what `DESIGN.md` documents. Tool pages still run the older light **kitchen** system, kept in the same `@theme` under its own comment; do not extend it. The two are separated by a body class, `shell-deck` or `shell-kitchen`, set through `SiteDocument`'s `shell` prop. Building a Tailwind class by interpolation never works — Tailwind cannot see `bg-${accent}` and emits nothing.
+Two rules the RSC build enforces, both of which fail after a clean build rather than during it:
+
+- Never import `@heroui/react` from a server component. Its barrel reaches `react-aria-components`, which is `client-only`, and the `rsc` environment refuses to build it. Import it only from a `"use client"` module.
+- Compound dot-access (`Card.Header`) does not survive the RSC boundary and renders as `undefined`. In a server component use `*Variants()` from `@heroui/styles` on plain HTML, which is also how the pages stay free of client JavaScript. Inside a `"use client"` component the compound API is fine.
+
+Building a Tailwind class by interpolation never works — Tailwind cannot see `bg-${accent}` and emits nothing.
 
 ## Ultracite Code Standards
 

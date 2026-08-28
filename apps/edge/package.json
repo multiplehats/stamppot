@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@heroui/react": "catalog:",
+    "@heroui/styles": "catalog:",
     "@parsew/sdk": "catalog:",
     "@stamppot/core": "workspace:*",
     "@stamppot/http-adapter": "workspace:*",

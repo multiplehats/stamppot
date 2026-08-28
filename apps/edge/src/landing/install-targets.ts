@@ -152,10 +152,11 @@ export interface InstallOption extends InstallSnippet {
 
 interface InstallOptionsInput extends InstallContext {
   /**
-   * The icon *chip* the logo is drawn on, not the card behind it. Parsew
-   * returns a near-white mark for `dark`, which disappears on a light chip —
-   * `InstallCard` uses a light chip in both tones, so both callers pass
-   * `light`. Follow the chip if a dark one is ever added.
+   * The surface the logo is drawn on, not the card behind it. Parsew returns a
+   * near-white mark for `dark`, which disappears on a light surface — the
+   * `Avatar` in `InstallCard` sits on HeroUI's `--default`, which is light in
+   * the default theme, so every caller passes `light`. Follow that surface if
+   * a dark theme is ever added.
    */
   readonly theme: "dark" | "light";
 }
