@@ -18,6 +18,11 @@
       "binding": "GROCERIES_CATALOG",
       "bucket_name": "stamppot-groceries-catalog",
       "jurisdiction": "eu"
+    },
+    {
+      "binding": "OV_STOPS",
+      "bucket_name": "stamppot-ov-stops",
+      "jurisdiction": "eu"
     }
   ],
   "durable_objects": {
@@ -38,6 +43,14 @@
     {
       "name": "SHOPPING_LIST_WRITES",
       "namespace_id": "1763268921",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    },
+    {
+      "name": "OV_UPSTREAM_READS",
+      "namespace_id": "1763268922",
       "simple": {
         "limit": 30,
         "period": 60

@@ -1,0 +1,148 @@
+{
+  "source": "HARP",
+  "trips": [
+    {
+      "uid": "trip-1",
+      "ctxRecon": "context-1",
+      "plannedDurationInMinutes": 27,
+      "actualDurationInMinutes": 30,
+      "transfers": 0,
+      "status": "NORMAL",
+      "optimal": true,
+      "crowdForecast": "MEDIUM",
+      "punctuality": 92.4,
+      "realtime": true,
+      "messages": [],
+      "legs": [
+        {
+          "idx": "0",
+          "name": "IC 3062",
+          "travelType": "PUBLIC_TRANSIT",
+          "direction": "Maastricht",
+          "cancelled": false,
+          "changePossible": true,
+          "origin": {
+            "name": "Amsterdam Centraal",
+            "lng": 4.9002316,
+            "lat": 52.3788871,
+            "city": "Amsterdam",
+            "countryCode": "NL",
+            "uicCode": "8400058",
+            "type": "ORIGIN",
+            "plannedTimeZoneOffset": 120,
+            "plannedDateTime": "2026-08-28T16:05:00+0200",
+            "actualTimeZoneOffset": 120,
+            "actualDateTime": "2026-08-28T16:08:00+0200",
+            "plannedTrack": "11b",
+            "actualTrack": "12a"
+          },
+          "destination": {
+            "name": "Utrecht Centraal",
+            "lng": 5.1093781,
+            "lat": 52.0894436,
+            "city": "Utrecht",
+            "countryCode": "NL",
+            "uicCode": "8400621",
+            "type": "DESTINATION",
+            "plannedTimeZoneOffset": 120,
+            "plannedDateTime": "2026-08-28T16:32:00+0200",
+            "actualTimeZoneOffset": 120,
+            "actualDateTime": "2026-08-28T16:35:00+0200",
+            "plannedTrack": "5",
+            "actualTrack": "5"
+          },
+          "product": {
+            "number": "3062",
+            "categoryCode": "IC",
+            "shortCategoryName": "IC",
+            "longCategoryName": "Intercity",
+            "operatorCode": "ns",
+            "operatorName": "NS",
+            "type": "TRAIN",
+            "displayName": "NS Intercity"
+          },
+          "notes": [],
+          "messages": [],
+          "stops": [],
+          "crowdForecast": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "uid": "trip-2",
+      "ctxRecon": "context-2",
+      "plannedDurationInMinutes": 41,
+      "transfers": 1,
+      "status": "NORMAL",
+      "optimal": false,
+      "crowdForecast": "LOW",
+      "messages": [],
+      "legs": [
+        {
+          "idx": "0",
+          "name": "SPR 4842",
+          "travelType": "PUBLIC_TRANSIT",
+          "direction": "Amersfoort Centraal",
+          "cancelled": false,
+          "origin": {
+            "name": "Amsterdam Centraal",
+            "uicCode": "8400058",
+            "plannedDateTime": "2026-08-28T16:17:00+0200",
+            "plannedTrack": "3"
+          },
+          "destination": {
+            "name": "Amsterdam Amstel",
+            "uicCode": "8400057",
+            "plannedDateTime": "2026-08-28T16:29:00+0200",
+            "plannedTrack": "1"
+          },
+          "product": {
+            "number": "4842",
+            "categoryCode": "SPR",
+            "shortCategoryName": "SPR",
+            "longCategoryName": "Sprinter",
+            "operatorCode": "ns",
+            "operatorName": "NS",
+            "type": "TRAIN"
+          },
+          "notes": [],
+          "messages": [],
+          "stops": []
+        },
+        {
+          "idx": "1",
+          "name": "IC 3562",
+          "travelType": "PUBLIC_TRANSIT",
+          "direction": "Utrecht Centraal",
+          "cancelled": false,
+          "origin": {
+            "name": "Amsterdam Amstel",
+            "uicCode": "8400057",
+            "plannedDateTime": "2026-08-28T16:35:00+0200",
+            "plannedTrack": "2"
+          },
+          "destination": {
+            "name": "Utrecht Centraal",
+            "uicCode": "8400621",
+            "plannedDateTime": "2026-08-28T16:58:00+0200",
+            "plannedTrack": "7"
+          },
+          "product": {
+            "number": "3562",
+            "categoryCode": "IC",
+            "shortCategoryName": "IC",
+            "longCategoryName": "Intercity",
+            "operatorCode": "ns",
+            "operatorName": "NS",
+            "type": "TRAIN"
+          },
+          "notes": [],
+          "messages": [],
+          "stops": []
+        }
+      ]
+    }
+  ],
+  "scrollRequestBackwardContext": "backward-context",
+  "scrollRequestForwardContext": "forward-context"
+}

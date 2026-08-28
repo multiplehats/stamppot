@@ -4,6 +4,8 @@ import { handleHttpToolsRequest } from "@stamppot/http-adapter";
 import { createRegistryMcpHandler } from "@stamppot/mcp-adapter";
 import { createGroceriesMcp } from "@stamppot/mcp-groceries";
 import { createCloudflareGroceriesDependencies } from "@stamppot/mcp-groceries/cloudflare";
+import { createOvMcp } from "@stamppot/mcp-ov";
+import { createCloudflareOvDependencies } from "@stamppot/mcp-ov/cloudflare";
 import { toolContent } from "./landing/content";
 import {
   renderMarkdown,
@@ -18,7 +20,8 @@ const TOOL_PAGE_PATTERN = /^\/tools\/([a-z][a-z0-9_]*)$/;
 const groceriesMcp = createGroceriesMcp(
   createCloudflareGroceriesDependencies(() => bindings)
 );
-const registry = new OperationRegistry([groceriesMcp]);
+const ovMcp = createOvMcp(createCloudflareOvDependencies(() => bindings));
+const registry = new OperationRegistry([groceriesMcp, ovMcp]);
 const toolCatalog = toolContent(registry);
 
 const combinedMcpHandler = createRegistryMcpHandler(registry, {
@@ -31,6 +34,13 @@ const groceriesMcpHandler = createRegistryMcpHandler(registry, {
   mcp: groceriesMcp,
   route: "/mcp/groceries",
   serverName: "stamppot-groceries",
+  serverVersion: SERVER_VERSION,
+});
+
+const ovMcpHandler = createRegistryMcpHandler(registry, {
+  mcp: ovMcp,
+  route: "/mcp/ov",
+  serverName: "stamppot-ov",
   serverVersion: SERVER_VERSION,
 });
 
@@ -106,6 +116,9 @@ export default {
     }
     if (url.pathname === "/mcp/groceries") {
       return withSecurityHeaders(await groceriesMcpHandler(request, env, ctx));
+    }
+    if (url.pathname === "/mcp/ov") {
+      return withSecurityHeaders(await ovMcpHandler(request, env, ctx));
     }
 
     if (request.method === "OPTIONS" && url.pathname.startsWith("/v1/")) {

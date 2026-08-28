@@ -1,0 +1,97 @@
+{
+  "payload": {
+    "source": "MIXED",
+    "departures": [
+      {
+        "direction": "Utrecht Centraal",
+        "name": "Intercity naar Utrecht Centraal",
+        "plannedDateTime": "2026-08-28T16:05:00+0200",
+        "plannedTimeZoneOffset": 120,
+        "actualDateTime": "2026-08-28T16:08:00+0200",
+        "actualTimeZoneOffset": 120,
+        "plannedTrack": "11b",
+        "actualTrack": "12a",
+        "product": {
+          "number": "3062",
+          "categoryCode": "IC",
+          "shortCategoryName": "IC",
+          "longCategoryName": "Intercity",
+          "operatorCode": "ns",
+          "operatorName": "NS",
+          "type": "TRAIN",
+          "displayName": "NS Intercity"
+        },
+        "trainCategory": "IC",
+        "cancelled": false,
+        "routeStations": [
+          { "uicCode": "8400319", "mediumName": "Amersfoort C." }
+        ],
+        "messages": [
+          {
+            "id": "1",
+            "head": "Gewijzigd vertrekspoor",
+            "text": "Deze trein vertrekt vandaag van spoor 12a.",
+            "type": "WARNING"
+          }
+        ],
+        "departureStatus": "DELAYED"
+      },
+      {
+        "direction": "Rotterdam Centraal",
+        "name": "Intercity direct naar Rotterdam Centraal",
+        "plannedDateTime": "2026-08-28T16:12:00+0200",
+        "plannedTimeZoneOffset": 120,
+        "plannedTrack": "15",
+        "product": {
+          "number": "1069",
+          "categoryCode": "ICD",
+          "shortCategoryName": "ICD",
+          "longCategoryName": "Intercity direct",
+          "operatorCode": "ns",
+          "operatorName": "NS",
+          "type": "TRAIN",
+          "displayName": "NS Intercity direct"
+        },
+        "trainCategory": "ICD",
+        "cancelled": true,
+        "routeStations": [],
+        "messages": [
+          {
+            "id": "2",
+            "head": "Rijdt niet",
+            "text": "Deze trein rijdt vandaag niet.",
+            "type": "DISRUPTION"
+          }
+        ],
+        "departureStatus": "CANCELLED"
+      },
+      {
+        "direction": "Alkmaar",
+        "name": "Sprinter naar Alkmaar",
+        "plannedDateTime": "2026-08-28T16:17:00+0200",
+        "plannedTimeZoneOffset": 120,
+        "actualDateTime": "2026-08-28T16:17:00+0200",
+        "actualTimeZoneOffset": 120,
+        "plannedTrack": "3",
+        "actualTrack": "3",
+        "product": {
+          "number": "4842",
+          "categoryCode": "SPR",
+          "shortCategoryName": "SPR",
+          "longCategoryName": "Sprinter",
+          "operatorCode": "ns",
+          "operatorName": "NS",
+          "type": "TRAIN",
+          "displayName": "NS Sprinter"
+        },
+        "trainCategory": "SPR",
+        "cancelled": false,
+        "routeStations": [],
+        "messages": [],
+        "departureStatus": "ON_STATION"
+      }
+    ]
+  },
+  "links": {},
+  "meta": {}
+}

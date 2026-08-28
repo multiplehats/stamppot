@@ -1,0 +1,81 @@
+[
+  {
+    "id": "disruption-1",
+    "type": "DISRUPTION",
+    "title": "Amsterdam Centraal - Utrecht Centraal: minder treinen",
+    "topic": "disruption-1",
+    "isActive": true,
+    "registrationTime": "2026-08-28T14:02:00+0200",
+    "releaseTime": "2026-08-28T14:05:00+0200",
+    "local": false,
+    "start": "2026-08-28T14:00:00+0200",
+    "end": "2026-08-28T18:00:00+0200",
+    "phase": { "id": "onbekend", "label": "Onbekend" },
+    "expectedDuration": {
+      "description": "tot ongeveer 18:00 uur",
+      "endTime": "2026-08-28T18:00:00+0200"
+    },
+    "publicationSections": [
+      {
+        "section": {
+          "stations": [
+            {
+              "uicCode": "8400058",
+              "stationCode": "ASD",
+              "name": "Amsterdam Centraal"
+            },
+            {
+              "uicCode": "8400621",
+              "stationCode": "UT",
+              "name": "Utrecht Centraal"
+            }
+          ],
+          "direction": "BOTH"
+        },
+        "consequence": {
+          "section": {
+            "stations": [],
+            "direction": "BOTH"
+          },
+          "level": "LESS_TRAINS",
+          "description": "Er rijden minder treinen."
+        }
+      }
+    ],
+    "timespans": [
+      {
+        "start": "2026-08-28T14:00:00+0200",
+        "end": "2026-08-28T18:00:00+0200",
+        "period": "tot ongeveer 18:00 uur",
+        "situation": { "label": "Er rijden minder treinen." },
+        "cause": { "label": "een defecte trein" },
+        "advices": [
+          "Houd rekening met een langere reistijd.",
+          "Reis via Amersfoort Centraal."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "maintenance-1",
+    "type": "MAINTENANCE",
+    "title": "Rotterdam Centraal - Den Haag HS: werkzaamheden",
+    "topic": "maintenance-1",
+    "isActive": false,
+    "local": false,
+    "start": "2026-09-12T23:00:00+0200",
+    "end": "2026-09-15T05:00:00+0200",
+    "period": "van vrijdag 12 september tot maandag 15 september",
+    "publicationSections": [],
+    "timespans": [
+      {
+        "start": "2026-09-12T23:00:00+0200",
+        "end": "2026-09-15T05:00:00+0200",
+        "period": "van vrijdag 12 september tot maandag 15 september",
+        "situation": { "label": "Er rijden geen treinen." },
+        "cause": { "label": "werkzaamheden" },
+        "advices": ["Reis met de vervangende bussen."]
+      }
+    ]
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "name": "@stamppot/mcp-ov",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cloudflare": "./src/cloudflare.ts",
+    "./stops-build": "./src/stops-build.ts"
+  },
+  "dependencies": {
+    "@stamppot/core": "workspace:*",
+    "zod": "catalog:"
+  }
+}
