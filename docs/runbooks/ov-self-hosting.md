@@ -123,7 +123,7 @@ All three should report `status: "ok"`. Use the codes the first call returns for
 
 - `directory_unavailable` from `find_ov_stop` usually means the bucket holds no valid manifest, or the deployed binding points at a different bucket.
 - `upstream_unavailable` from a train tool usually means the `NS_API_KEY` secret is missing, wrong, or over its daily quota.
-- `upstream_unavailable` from `get_stop_departures` is the one result worth reporting upstream: OVapi is fetched over plain HTTP, and that subrequest has been verified only against the local Workers runtime, not the Cloudflare edge. If it fails here but `curl http://v0.ovapi.nl/stopareacode/09500` succeeds from your machine, the edge is refusing the plain-HTTP subrequest.
+- `upstream_unavailable` from `get_stop_departures` almost always means OVapi itself is down, slow, or rate-limiting you. Its plain-HTTP origin is reachable from the Cloudflare edge — confirmed with a deployed Worker that received HTTP 200 and OVapi JSON — so this is far likelier to be the unofficial upstream having a bad day than a platform restriction. Compare against `curl http://v0.ovapi.nl/stopareacode/09500` from your own machine.
 - `unknown_station` or `unknown_stop` means the code was rejected by the upstream; resolve it again with `find_ov_stop`.
 
 **The NS response shapes are worth a real look on this first call.** The repository's NS fixtures were authored from the published OpenAPI definition rather than recorded from a live key, so this is the point at which the mapping is genuinely verified against production data. The clients read every upstream field defensively, so a mismatch shows up as a missing output field rather than an error.
