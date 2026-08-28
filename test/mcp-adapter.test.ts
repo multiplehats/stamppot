@@ -175,6 +175,52 @@ describe.each([
 });
 
 describe("MCP adapter ingress", () => {
+  it("accepts a same-origin request on workers.dev", async () => {
+    const workerOrigin = "https://stamppot-review.workers.dev";
+    const response = await handler(
+      new Request(`${workerOrigin}/mcp-test`, {
+        body: JSON.stringify({
+          id: 1,
+          jsonrpc: "2.0",
+          method: "tools/list",
+          params: {},
+        }),
+        headers: {
+          accept: "application/json, text/event-stream",
+          "content-type": "application/json",
+          host: "stamppot-review.workers.dev",
+          "mcp-method": "tools/list",
+          "mcp-protocol-version": LEGACY_PROTOCOL_VERSION,
+          origin: workerOrigin,
+        },
+        method: "POST",
+      }),
+      {},
+      createExecutionContext()
+    );
+
+    expect(response.status).toBe(200);
+    expect((await readProtocolPayload(response)).error).toBeUndefined();
+  });
+
+  it("rejects a workers.dev Origin with the wrong scheme", async () => {
+    const response = await handler(
+      new Request("https://stamppot-review.workers.dev/mcp-test", {
+        body: "{not-json",
+        headers: {
+          "content-type": "application/json",
+          host: "stamppot-review.workers.dev",
+          origin: "http://stamppot-review.workers.dev",
+        },
+        method: "POST",
+      }),
+      {},
+      createExecutionContext()
+    );
+
+    expect(response.status).toBe(403);
+  });
+
   it("preserves nested input descriptions in tools/list", async () => {
     const { payload } = await callProtocol(
       CURRENT_PROTOCOL_VERSION,

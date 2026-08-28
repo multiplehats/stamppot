@@ -15,6 +15,7 @@ import {
   checkjebonSourceSchema,
   createProductUrl,
   eurosToCents,
+  MAX_CATALOG_OBJECT_BYTES,
   offerSearchTokens,
   sha256Hex,
   shardIndexForPrefix,
@@ -223,6 +224,14 @@ async function artifactObject(
   return { body, key, sha256: await sha256Hex(body) };
 }
 
+function assertCatalogShardSize(object: CatalogArtifactObject): void {
+  if (object.body.byteLength > MAX_CATALOG_OBJECT_BYTES) {
+    throw new Error(
+      `Catalog shard ${object.key} exceeds the ${MAX_CATALOG_OBJECT_BYTES}-byte limit`
+    );
+  }
+}
+
 export async function buildCatalogArtifacts(options: {
   readonly observedAt: Date;
   readonly source: unknown;
@@ -256,6 +265,7 @@ export async function buildCatalogArtifacts(options: {
         shardIndex,
       } satisfies CatalogShard);
       const object = await artifactObject(shardKey(version, shardIndex), shard);
+      assertCatalogShardSize(object);
       return {
         manifestShard: {
           byteLength: object.body.byteLength,
@@ -312,6 +322,7 @@ export async function validateCatalogArtifacts(
 
   await Promise.all(
     artifacts.versionObjects.map(async (object, index) => {
+      assertCatalogShardSize(object);
       const manifestShard = manifest.shards[index];
       if (
         manifestShard === undefined ||

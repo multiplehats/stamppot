@@ -82,7 +82,7 @@ async function readBoundedJsonBody(request: Request): Promise<unknown> {
 }
 
 function validateMcpRequest(request: Request): Response | undefined {
-  const { hostname } = new URL(request.url);
+  const { hostname, origin } = new URL(request.url);
   const isLocalEndpoint = localhostAllowedHostnames().includes(hostname);
   const isWorkersDevEndpoint = hostname.endsWith(".workers.dev");
   let acceptedHostnames: string[] | undefined;
@@ -99,11 +99,18 @@ function validateMcpRequest(request: Request): Response | undefined {
     return hostRejection;
   }
 
-  const acceptedOrigins = new Set(localhostAllowedOrigins());
   if (isWorkersDevEndpoint) {
-    acceptedOrigins.add(hostname);
+    const requestOrigin = request.headers.get("origin");
+    if (
+      requestOrigin === null ||
+      requestOrigin === "" ||
+      requestOrigin === origin
+    ) {
+      return undefined;
+    }
+    return originValidationResponse(request, []);
   }
-  return originValidationResponse(request, [...acceptedOrigins]);
+  return originValidationResponse(request, localhostAllowedOrigins());
 }
 
 export function createRegistryMcpHandler(

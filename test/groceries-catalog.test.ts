@@ -9,12 +9,17 @@ import {
   createOfferId,
   eurosToCents,
   fnv1a32,
+  MAX_PRODUCT_NAME_CHARACTERS,
   normalizeQueryTokens,
   normalizeSearchText,
   parsePackageText,
   shardIndexForPrefix,
   tokenPrefix,
 } from "../packages/mcp-groceries/src/catalog-format";
+import {
+  basketSelectionSchema,
+  groceryOfferSchema,
+} from "../packages/mcp-groceries/src/contracts";
 
 const OFFER_ID_PATTERN = /^off_[A-Za-z0-9_-]{43}$/;
 
@@ -140,6 +145,25 @@ describe("catalog normalization and format helpers", () => {
       "borden",
     ]);
     expect(normalizeQueryTokens("cola")).toEqual(["cola"]);
+    expect(normalizeQueryTokens("constructor")).toEqual(["constructor"]);
+  });
+
+  it("keeps published and public product-name bounds aligned", () => {
+    const maximumName = "x".repeat(MAX_PRODUCT_NAME_CHARACTERS);
+    const oversizedName = `${maximumName}x`;
+
+    expect(
+      checkjebonSourceSchema.element.shape.d.element.shape.n.parse(maximumName)
+    ).toBe(maximumName);
+    expect(groceryOfferSchema.shape.productName.parse(maximumName)).toBe(
+      maximumName
+    );
+    expect(basketSelectionSchema.shape.productName.parse(maximumName)).toBe(
+      maximumName
+    );
+    expect(
+      groceryOfferSchema.shape.productName.safeParse(oversizedName).success
+    ).toBe(false);
   });
 
   it("uses stable token prefixes and 32-bit FNV-1a sharding", () => {

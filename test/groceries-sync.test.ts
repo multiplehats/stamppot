@@ -7,6 +7,7 @@ import {
 } from "@stamppot/mcp-groceries/catalog-build";
 import { describe, expect, it } from "vitest";
 import fixtureText from "../packages/mcp-groceries/fixtures/checkjebon-small.json?raw";
+import { MAX_CATALOG_OBJECT_BYTES } from "../packages/mcp-groceries/src/catalog-format";
 
 const fixture = JSON.parse(fixtureText) as unknown;
 const FIXED_OBSERVED_AT = new Date("2026-08-27T08:15:30.000Z");
@@ -63,6 +64,9 @@ describe("grocery catalog build and publication", () => {
 
     const retailerRecords = fixture as Record<string, unknown>[];
     const [firstRetailer] = retailerRecords;
+    if (firstRetailer === undefined) {
+      throw new Error("Catalog fixture does not contain a retailer");
+    }
     const duplicateRetailers = [...retailerRecords, firstRetailer];
     await expect(
       buildCatalogArtifacts({
@@ -70,6 +74,45 @@ describe("grocery catalog build and publication", () => {
         source: duplicateRetailers,
       })
     ).rejects.toThrow("duplicate retailer slug");
+
+    const tooManyRetailers = Array.from({ length: 13 }, (_, index) => ({
+      ...firstRetailer,
+      c: `Synthetic Market ${index}`,
+      n: `shop-${index}`,
+    }));
+    await expect(
+      buildCatalogArtifacts({
+        observedAt: FIXED_OBSERVED_AT,
+        source: tooManyRetailers,
+      })
+    ).rejects.toThrow("cannot contain more than 12 retailers");
+  });
+
+  it("rejects an oversized shard before publishing any objects", async () => {
+    const artifacts = await buildCatalogArtifacts({
+      observedAt: FIXED_OBSERVED_AT,
+      source: fixture,
+    });
+    const [firstObject, ...remainingObjects] = artifacts.versionObjects;
+    if (firstObject === undefined) {
+      throw new Error("Catalog build did not produce a first shard");
+    }
+    const oversizedObject = {
+      ...firstObject,
+      body: new Uint8Array(MAX_CATALOG_OBJECT_BYTES + 1),
+    };
+    const versionObjects = [oversizedObject, ...remainingObjects];
+    const oversizedArtifacts = {
+      ...artifacts,
+      objects: [...versionObjects, artifacts.manifestObject],
+      versionObjects,
+    };
+    const publisher = new RecordingPublisher();
+
+    await expect(
+      publishCatalogArtifacts(oversizedArtifacts, publisher)
+    ).rejects.toThrow("exceeds the 1048576-byte limit");
+    expect(publisher.objects).toEqual([]);
   });
 
   it("publishes a new observed version when unchanged prices are seen later", async () => {

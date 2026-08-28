@@ -4,6 +4,8 @@ import { GROCERY_ALIASES } from "./aliases";
 export const CATALOG_FORMAT_VERSION = 1;
 export const CATALOG_SHARD_COUNT = 128;
 export const MAX_CATALOG_OBJECT_BYTES = 1024 * 1024;
+export const MAX_CATALOG_RETAILERS = 12;
+export const MAX_PRODUCT_NAME_CHARACTERS = 1000;
 export const CATALOG_MANIFEST_KEY = "catalog/manifest.json";
 export const CHECKJEBON_DATA_URL =
   "https://www.checkjebon.nl/data/supermarkets.json";
@@ -27,7 +29,7 @@ const BASE64_PADDING_PATTERN = /[=]+$/u;
 export const sourceProductSchema = z
   .object({
     l: z.string().trim().min(1).max(2000),
-    n: z.string().trim().min(1).max(1000),
+    n: z.string().trim().min(1).max(MAX_PRODUCT_NAME_CHARACTERS),
     p: z.number().finite().nonnegative(),
     s: z.string().trim().max(500),
   })
@@ -47,7 +49,13 @@ export const sourceRetailerSchema = z
   })
   .strict();
 
-export const checkjebonSourceSchema = z.array(sourceRetailerSchema).min(1);
+export const checkjebonSourceSchema = z
+  .array(sourceRetailerSchema)
+  .min(1)
+  .max(
+    MAX_CATALOG_RETAILERS,
+    `Catalog source cannot contain more than ${MAX_CATALOG_RETAILERS} retailers`
+  );
 
 export const parsedPackageSchema = z
   .object({
@@ -80,7 +88,7 @@ export const catalogRetailerSchema = z.tuple([
 export const catalogIndexRecordSchema = z.tuple([
   z.array(z.string().min(2).max(3)).min(1),
   z.number().int().nonnegative().safe(),
-  z.string().min(1).max(1000),
+  z.string().min(1).max(MAX_PRODUCT_NAME_CHARACTERS),
   z.string().max(500),
   z.number().int().nonnegative().safe(),
   z.string().min(1).max(2000),
@@ -91,7 +99,7 @@ export const catalogShardSchema = z
     catalogVersion: z.string().min(1).max(200),
     formatVersion: z.literal(CATALOG_FORMAT_VERSION),
     records: z.array(catalogIndexRecordSchema),
-    retailers: z.array(catalogRetailerSchema).min(1),
+    retailers: z.array(catalogRetailerSchema).min(1).max(MAX_CATALOG_RETAILERS),
     shardIndex: z
       .number()
       .int()
@@ -123,7 +131,12 @@ export const catalogShardSchema = z
 
 export const catalogManifestShardSchema = z
   .object({
-    byteLength: z.number().int().nonnegative().safe(),
+    byteLength: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(MAX_CATALOG_OBJECT_BYTES)
+      .safe(),
     key: z.string().regex(/^catalog\/versions\/[^/]+\/index\/\d{3}\.json$/),
     sha256: z.string().regex(/^[a-f0-9]{64}$/),
   })
@@ -135,7 +148,12 @@ export const catalogManifestSchema = z
     formatVersion: z.literal(CATALOG_FORMAT_VERSION),
     observedAt: z.string().datetime({ offset: true }),
     offerCount: z.number().int().positive().safe(),
-    retailerCount: z.number().int().positive().safe(),
+    retailerCount: z
+      .number()
+      .int()
+      .positive()
+      .max(MAX_CATALOG_RETAILERS)
+      .safe(),
     shardCount: z.literal(CATALOG_SHARD_COUNT),
     shards: z.array(catalogManifestShardSchema).length(CATALOG_SHARD_COUNT),
     source: z
@@ -171,13 +189,19 @@ function splitNormalized(value: string): string[] {
   return normalized === "" ? [] : normalized.split(" ");
 }
 
+function groceryAlias(value: string): readonly string[] | undefined {
+  return Object.hasOwn(GROCERY_ALIASES, value)
+    ? GROCERY_ALIASES[value]
+    : undefined;
+}
+
 export function normalizeQueryTokens(query: string): string[] {
   const normalizedQuery = normalizeSearchText(query);
-  const phraseAlias = GROCERY_ALIASES[normalizedQuery];
+  const phraseAlias = groceryAlias(normalizedQuery);
   const rawTokens = splitNormalized(normalizedQuery);
   const expandedTokens =
     phraseAlias === undefined
-      ? rawTokens.flatMap((token) => GROCERY_ALIASES[token] ?? [token])
+      ? rawTokens.flatMap((token) => groceryAlias(token) ?? [token])
       : [...phraseAlias];
   return [...new Set(expandedTokens.map(normalizeSearchText))].filter(
     (token) => token.length >= 2

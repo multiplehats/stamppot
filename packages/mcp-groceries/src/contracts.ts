@@ -1,7 +1,11 @@
 import { z } from "zod";
+import {
+  MAX_CATALOG_RETAILERS,
+  MAX_PRODUCT_NAME_CHARACTERS,
+} from "./catalog-format";
 
 export const MAX_QUERY_CHARACTERS = 120;
-export const MAX_RETAILER_FILTERS = 12;
+export const MAX_RETAILER_FILTERS = MAX_CATALOG_RETAILERS;
 export const MAX_SEARCH_RESULTS = 20;
 export const MAX_BASKET_LINES = 20;
 export const MAX_STORES = 3;
@@ -290,7 +294,7 @@ export const groceryOfferSchema = z
     offerId: z.string().regex(/^off_[A-Za-z0-9_-]{43}$/),
     packageText: z.string().max(500),
     priceCents: z.number().int().nonnegative().safe(),
-    productName: z.string().min(1).max(500),
+    productName: z.string().min(1).max(MAX_PRODUCT_NAME_CHARACTERS),
     productUrl: z.string().url(),
     retailerName: z.string().min(1).max(200),
     retailerSlug: retailerSlugSchema,
@@ -365,7 +369,7 @@ export const basketSelectionSchema = basketLineReferenceSchema
     packageCount: z.number().int().positive().safe(),
     packageText: z.string().max(500),
     priceCents: z.number().int().nonnegative().safe(),
-    productName: z.string().min(1).max(500),
+    productName: z.string().min(1).max(MAX_PRODUCT_NAME_CHARACTERS),
     productUrl: z.string().url(),
     retailerName: z.string().min(1).max(200),
     retailerSlug: retailerSlugSchema,

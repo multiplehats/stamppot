@@ -11,6 +11,7 @@ import {
   createOfferId,
   createProductUrl,
   MAX_CATALOG_OBJECT_BYTES,
+  MAX_CATALOG_RETAILERS,
   normalizeQueryTokens,
   normalizeSearchText,
   type ParsedPackage,
@@ -926,7 +927,7 @@ export class GroceryCatalog implements GroceryCatalogService {
     const retailerSlugs = [
       ...new Set(lineStates.flatMap(({ options }) => [...options.keys()])),
     ].sort(compareStrings);
-    if (retailerSlugs.length > 12) {
+    if (retailerSlugs.length > MAX_CATALOG_RETAILERS) {
       return throwCatalogUnavailable();
     }
     const planCandidates = combinations(
