@@ -1,0 +1,114 @@
+{
+  "05003": {
+    "Latitude": 52.377132,
+    "Longitude": 4.9020486,
+    "StopAreaCode": "05003",
+    "TimingPointName": "Centraal Station",
+    "TimingPointTown": "Amsterdam"
+  },
+  "09500": {
+    "Latitude": 52.377495,
+    "Longitude": 4.9007816,
+    "StopAreaCode": "09500",
+    "TimingPointName": "Centraal Station",
+    "TimingPointTown": "Amsterdam"
+  },
+  "1001": {
+    "Latitude": 52.093323,
+    "Longitude": 4.2896123,
+    "StopAreaCode": "1001",
+    "TimingPointName": "Adriaan Goekooplaan",
+    "TimingPointTown": "Den Haag"
+  },
+  "101": {
+    "Latitude": 52.109253,
+    "Longitude": 4.3268857,
+    "StopAreaCode": "101",
+    "TimingPointName": "Oude Waalsdorperweg",
+    "TimingPointTown": "Den Haag"
+  },
+  "103": {
+    "Latitude": 51.92832,
+    "Longitude": 4.496445,
+    "StopAreaCode": "103",
+    "TimingPointName": "Boezemweg",
+    "TimingPointTown": "Rotterdam"
+  },
+  "10321": {
+    "Latitude": 51.89126,
+    "Longitude": 4.4730053,
+    "StopAreaCode": "10321",
+    "TimingPointName": "Dorpsweg",
+    "TimingPointTown": "Rotterdam"
+  },
+  "10322": {
+    "Latitude": 51.890934,
+    "Longitude": 4.469467,
+    "StopAreaCode": "10322",
+    "TimingPointName": "Frans Bekkerstraat",
+    "TimingPointTown": "Rotterdam"
+  },
+  "1106": {
+    "Latitude": 52.088398,
+    "Longitude": 4.280161,
+    "StopAreaCode": "1106",
+    "TimingPointName": "Kunstmuseum",
+    "TimingPointTown": "Den Haag"
+  },
+  "1114": {
+    "Latitude": 52.08494,
+    "Longitude": 4.283413,
+    "StopAreaCode": "1114",
+    "TimingPointName": "Groot Hertoginnelaan",
+    "TimingPointTown": "Den Haag"
+  },
+  "1117": {
+    "Latitude": 52.085304,
+    "Longitude": 4.2876496,
+    "StopAreaCode": "1117",
+    "TimingPointName": "Banstraat",
+    "TimingPointTown": "Den Haag"
+  },
+  "30267": {
+    "Latitude": 52.213146,
+    "Longitude": 6.859742,
+    "StopAreaCode": "30267",
+    "TimingPointName": "Enschede, Albert Cuypstraat",
+    "TimingPointTown": "Enschede"
+  },
+  "ApRSta": {
+    "Latitude": 47.974766,
+    "Longitude": 3.3135424,
+    "StopAreaCode": "ApRSta",
+    "TimingPointName": "Station",
+    "TimingPointTown": "Alphen a/d Rijn"
+  },
+  "C.S.": {
+    "Latitude": 51.92331,
+    "Longitude": 4.472339,
+    "StopAreaCode": "C.S.",
+    "TimingPointName": "Rotterdam Centraal perron F",
+    "TimingPointTown": "Rotterdam"
+  },
+  "GtcBeu": {
+    "Latitude": 47.974766,
+    "Longitude": 3.3135424,
+    "StopAreaCode": "GtcBeu",
+    "TimingPointName": "Beukenboomsweg",
+    "TimingPointTown": "Guttecoven"
+  },
+  "HluHal": {
+    "Latitude": 53.30824,
+    "Longitude": 5.780783,
+    "StopAreaCode": "HluHal",
+    "TimingPointName": "Hallum Provinciale weg",
+    "TimingPointTown": "Hallum"
+  },
+  "asdcs": {
+    "Latitude": 47.974766,
+    "Longitude": 3.3135424,
+    "StopAreaCode": "asdcs",
+    "TimingPointName": "Amsterdam, Centraal Station",
+    "TimingPointTown": "Amsterdam"
+  }
+}

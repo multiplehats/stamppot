@@ -1,0 +1,124 @@
+{
+  "payload": [
+    {
+      "UICCode": "8400058",
+      "stationType": "MEGA_STATION",
+      "EVACode": "8000058",
+      "code": "ASD",
+      "sporen": [{ "spoorNummer": "2" }, { "spoorNummer": "4a" }],
+      "synoniemen": ["Amsterdam CS"],
+      "heeftFaciliteiten": true,
+      "heeftVertrektijden": true,
+      "heeftReisassistentie": true,
+      "namen": {
+        "lang": "Amsterdam Centraal",
+        "middel": "Amsterdam C.",
+        "kort": "Amsterdam"
+      },
+      "land": "NL",
+      "lat": 52.3788871,
+      "lng": 4.9002316,
+      "radius": 0,
+      "naderenRadius": 0
+    },
+    {
+      "UICCode": "8400621",
+      "stationType": "MEGA_STATION",
+      "EVACode": "8000621",
+      "code": "UT",
+      "sporen": [{ "spoorNummer": "5" }],
+      "synoniemen": ["Utrecht CS"],
+      "heeftFaciliteiten": true,
+      "heeftVertrektijden": true,
+      "heeftReisassistentie": true,
+      "namen": {
+        "lang": "Utrecht Centraal",
+        "middel": "Utrecht C.",
+        "kort": "Utrecht"
+      },
+      "land": "NL",
+      "lat": 52.0894436,
+      "lng": 5.1093781,
+      "radius": 0,
+      "naderenRadius": 0
+    },
+    {
+      "UICCode": "8400530",
+      "stationType": "MEGA_STATION",
+      "EVACode": "8000530",
+      "code": "RTD",
+      "sporen": [{ "spoorNummer": "11" }],
+      "synoniemen": [],
+      "heeftFaciliteiten": true,
+      "heeftVertrektijden": true,
+      "heeftReisassistentie": true,
+      "namen": {
+        "lang": "Rotterdam Centraal",
+        "middel": "Rotterdam C.",
+        "kort": "Rotterdam"
+      },
+      "land": "NL",
+      "lat": 51.9249266,
+      "lng": 4.4699231,
+      "radius": 0,
+      "naderenRadius": 0
+    },
+    {
+      "UICCode": "8400319",
+      "stationType": "KNOOPPUNT_INTERCITY_STATION",
+      "EVACode": "8000319",
+      "code": "GN",
+      "sporen": [{ "spoorNummer": "3" }],
+      "synoniemen": [],
+      "heeftFaciliteiten": true,
+      "heeftVertrektijden": true,
+      "heeftReisassistentie": true,
+      "namen": { "lang": "Groningen", "middel": "Groningen", "kort": "Grongn" },
+      "land": "NL",
+      "lat": 53.2110606,
+      "lng": 6.5648255,
+      "radius": 0,
+      "naderenRadius": 0
+    },
+    {
+      "UICCode": "8400282",
+      "stationType": "KNOOPPUNT_INTERCITY_STATION",
+      "EVACode": "8000282",
+      "code": "AMR",
+      "sporen": [{ "spoorNummer": "1" }],
+      "synoniemen": [],
+      "heeftFaciliteiten": true,
+      "heeftVertrektijden": true,
+      "heeftReisassistentie": false,
+      "namen": { "lang": "Alkmaar", "middel": "Alkmaar", "kort": "Alkmr" },
+      "land": "NL",
+      "lat": 52.6380267,
+      "lng": 4.7398701,
+      "radius": 0,
+      "naderenRadius": 0
+    },
+    {
+      "UICCode": "8800004",
+      "stationType": "MEGA_STATION",
+      "EVACode": "8800004",
+      "code": "BRUX",
+      "sporen": [],
+      "synoniemen": [],
+      "heeftFaciliteiten": false,
+      "heeftVertrektijden": false,
+      "heeftReisassistentie": false,
+      "namen": {
+        "lang": "Brussel-Zuid",
+        "middel": "Brussel-Z.",
+        "kort": "BrusZ"
+      },
+      "land": "B",
+      "lat": 50.8358,
+      "lng": 4.3358,
+      "radius": 0,
+      "naderenRadius": 0
+    }
+  ],
+  "links": {},
+  "meta": {}
+}

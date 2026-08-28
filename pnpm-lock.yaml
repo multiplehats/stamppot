@@ -138,6 +138,9 @@ importers:
       '@stamppot/mcp-groceries':
         specifier: workspace:*
         version: link:packages/mcp-groceries
+      '@stamppot/mcp-ov':
+        specifier: workspace:*
+        version: link:packages/mcp-ov
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
@@ -216,6 +219,9 @@ importers:
       '@stamppot/mcp-groceries':
         specifier: workspace:*
         version: link:../../packages/mcp-groceries
+      '@stamppot/mcp-ov':
+        specifier: workspace:*
+        version: link:../../packages/mcp-ov
       react:
         specifier: 'catalog:'
         version: 19.2.8
@@ -261,6 +267,15 @@ importers:
         version: 0.21.0(@babel/core@8.0.1)(@babel/runtime@7.29.7)(@cloudflare/workers-types@5.20260827.1)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(@modelcontextprotocol/server@2.0.0)(react@19.2.8)(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))(zod@4.4.3)
 
   packages/mcp-groceries:
+    dependencies:
+      '@stamppot/core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+
+  packages/mcp-ov:
     dependencies:
       '@stamppot/core':
         specifier: workspace:*

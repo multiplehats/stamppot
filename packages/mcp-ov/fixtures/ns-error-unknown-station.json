@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-28T16:05:00.123+0200",
+  "code": 400,
+  "message": "Station 'ZZZZ' is onbekend",
+  "path": "/reisinformatie-api/api/v3/trips",
+  "exception": "IllegalArgumentException",
+  "errors": [],
+  "requestId": "request-1"
+}

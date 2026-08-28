@@ -11,6 +11,7 @@
     "@stamppot/http-adapter": "workspace:*",
     "@stamppot/mcp-adapter": "workspace:*",
     "@stamppot/mcp-groceries": "workspace:*",
+    "@stamppot/mcp-ov": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "rsc-html-stream": "catalog:"
