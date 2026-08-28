@@ -24,7 +24,9 @@ The two are not interchangeable and their code spaces are disjoint. An NS statio
 
 `https://v0.ovapi.nl/` presents a certificate issued for `1313.nl`, whose subject alternative names are `1313.nl`, `iepenbierferfier.frl`, `iepenbierferfier.nl` and their `www` forms. None of those hosts serve the OVapi paths — they answer 404 — and neither does `ovapi.nl`. Only the `v0` virtual host serves the data, and only its plain-HTTP origin validates.
 
-Cloudflare Workers cannot disable certificate verification, so `get_stop_departures` fetches `http://v0.ovapi.nl`. That was verified working from the Workers runtime. The consequence is stated plainly: **OVapi responses are not protected against on-path modification**, which is recorded in the tool's own documentation. The trade-off is accepted because the data is public, read-only, low-stakes real-time information, and because deferring the tool would have removed the only non-train modality. If OVapi ever publishes a matching certificate, only `OVAPI_BASE_URL` changes.
+Cloudflare Workers cannot disable certificate verification, so `get_stop_departures` fetches `http://v0.ovapi.nl`. The consequence is stated plainly, here and in the tool's own documentation: **OVapi responses are not protected against on-path modification.** The trade-off is accepted because the data is public, read-only, low-stakes real-time information, and because deferring the tool would have removed the only non-train modality. If OVapi ever publishes a matching certificate, only `OVAPI_BASE_URL` changes.
+
+That plain-HTTP subrequest was verified working from the **local** Workers runtime — workerd, under both `vite dev` and the Vitest pool — returning live departures. It has **not** been exercised on the Cloudflare edge, and that is the one materially unverified assumption in this design. The failure mode is contained: if the edge refuses a plain-HTTP subrequest, `get_stop_departures` answers `upstream_unavailable` and no other tool is affected. The runbook's `get_stop_departures` verification curl is the real test.
 
 ## Outbound fetch policy
 

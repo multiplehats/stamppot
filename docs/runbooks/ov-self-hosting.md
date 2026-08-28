@@ -106,6 +106,7 @@ All three should report `status: "ok"`. Use the codes the first call returns for
 
 - `directory_unavailable` from `find_ov_stop` usually means the bucket holds no valid manifest, or the deployed binding points at a different bucket.
 - `upstream_unavailable` from a train tool usually means the `NS_API_KEY` secret is missing, wrong, or over its daily quota.
+- `upstream_unavailable` from `get_stop_departures` is the one result worth reporting upstream: OVapi is fetched over plain HTTP, and that subrequest has been verified only against the local Workers runtime, not the Cloudflare edge. If it fails here but `curl http://v0.ovapi.nl/stopareacode/09500` succeeds from your machine, the edge is refusing the plain-HTTP subrequest.
 - `unknown_station` or `unknown_stop` means the code was rejected by the upstream; resolve it again with `find_ov_stop`.
 
 **The NS response shapes are worth a real look on this first call.** The repository's NS fixtures were authored from the published OpenAPI definition rather than recorded from a live key, so this is the point at which the mapping is genuinely verified against production data. The clients read every upstream field defensively, so a mismatch shows up as a missing output field rather than an error.
@@ -130,6 +131,8 @@ The repository installs no scheduled trigger, so this runs from an operator's ow
 ## Upstream obligations
 
 **NS.** The key is bound to an account and a daily request budget. `get_train_departures` results are cached for 30 seconds and journey and disruption results for 60 seconds, and every train tool consumes the rate limiter first, which is what keeps a public authless endpoint inside a personal quota. Raising the limiter's `limit`, lengthening the cache TTLs, or removing either will change how quickly the quota is spent. NS's API terms govern redistribution of the data.
+
+Cloudflare documents functional Cache API operations for [Workers deployed to custom domains](https://developers.cloudflare.com/workers/runtime-apis/cache/), and no impact at all in the dashboard editor and Playground. Treat the caching half of that budget protection as guaranteed only behind a custom domain: if you verify or run on the `workers.dev` URL, assume every train call reaches NS and that the per-IP limiter is the only thing standing between an authless endpoint and the daily quota. Deploy behind a custom domain before pointing real traffic at it.
 
 **OVapi.** `v0.ovapi.nl` is an unofficial community source with no published licence, no support and no availability guarantee, intended for non-commercial use. Keep request volume modest and do not build a commercial dependency on it. Its HTTPS endpoint presents a certificate for unrelated hostnames, so Stamppot fetches it over plain HTTP and its responses are not protected against on-path modification — see [`docs/decisions/ov.md`](../decisions/ov.md). Every OVapi result is labelled `official: false` in the tool output for that reason.
 

@@ -26,6 +26,12 @@ import {
 
 const DEFAULT_BUCKET = "stamppot-ov-stops";
 const WRANGLER_CONFIG = "apps/edge/wrangler.jsonc";
+/**
+ * Wrangler resolves its local persistence directory relative to the config
+ * file, which would put objects in `apps/edge/.wrangler/state` where the Vite
+ * dev server never looks. Pin it to the repository root instead.
+ */
+const LOCAL_PERSIST_DIRECTORY = ".wrangler/state";
 const MAX_SOURCE_BYTES = 64 * 1024 * 1024;
 const R2_BUCKET_PATTERN = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/;
 const NS_API_KEY_HEADER = "Ocp-Apim-Subscription-Key";
@@ -242,6 +248,9 @@ function wranglerStorageArguments(options: CliOptions): string[] {
     WRANGLER_CONFIG,
     options.mode === "local" ? "--local" : "--remote",
   ];
+  if (options.mode === "local") {
+    argumentsList.push("--persist-to", LOCAL_PERSIST_DIRECTORY);
+  }
   if (options.jurisdiction !== undefined) {
     argumentsList.push("--jurisdiction", options.jurisdiction);
   }
