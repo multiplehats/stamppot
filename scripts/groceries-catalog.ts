@@ -270,7 +270,9 @@ function createWranglerPublisher(
         ...wranglerStorageArguments(options),
       ]);
       if (result.exitCode !== 0) {
-        throw new Error("Wrangler failed to publish a catalog artifact");
+        throw new Error(
+          `Wrangler failed to publish a catalog artifact (${object.key}): ${result.stderr.trim() || result.stdout.trim()}`
+        );
       }
     },
   };
@@ -314,7 +316,12 @@ async function main(): Promise<void> {
     } else {
       await publishCatalogArtifacts(
         artifacts,
-        createWranglerPublisher(options, paths)
+        createWranglerPublisher(options, paths),
+        // Local publication runs one `wrangler r2 object put` process per object
+        // against a single miniflare SQLite persistence file; concurrent writers
+        // collide with SQLITE_BUSY, so serialize them. Remote puts are independent
+        // HTTPS requests and keep the default concurrency.
+        options.mode === "local" ? 1 : undefined
       );
     }
 
