@@ -47,8 +47,13 @@ Secrets live in `apps/edge/.env*`, encrypted with [dotenvx](https://dotenvx.com/
 
 Decrypting requires the private key. Maintainers hold it through dotenvx Armor; CI reads `DOTENV_PRIVATE_KEY_CI` and `DOTENV_PRIVATE_KEY_PRODUCTION` from repository secrets. Pull requests from forks cannot read those secrets, so CI falls back to running `pnpm check` without the decrypted values. Contributors do not need a key.
 
-Wrangler reads `apps/edge/.env` itself when it starts the local dev and test Workers, and it does that with the file on disk rather than with anything dotenvx has decrypted. Those Workers therefore see the literal `encrypted:...` ciphertext under `env.<KEY>`, not the real value. Nothing reads these keys yet, so nothing is broken, but do not trust `env.<KEY>` in `pnpm dev` or in a test. Set `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false` to keep the ciphertext out, and pass real values explicitly through the `miniflare.bindings` option in `vitest.config.ts` when a test genuinely needs one.
+Wrangler builds the local dev and test Worker `env` by reading files off disk, so it never sees what dotenvx decrypted. Pointed at the encrypted `.env` it would bind `env.<KEY>` to the literal `encrypted:...` string, which passes every truthiness check and only fails later against the upstream API. Two things prevent that:
 
-`pnpm run deploy:production` decrypts `.env.production`, uploads every non-`VITE_` value it declares as a Worker secret, then deploys. `VITE_` values are build-time only and are inlined by Vite instead. Secrets managed outside that file, such as `NS_API_KEY`, are never touched: the upload creates and updates, and deletes nothing.
+- `vite.config.ts` and `vitest.config.ts` set `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false`, so the encrypted files are never injected. A name with nothing behind it is absent, which fails loudly at the use site.
+- `pnpm dev` regenerates `apps/edge/.dev.vars` first (`pnpm run dev:vars`), which wrangler prefers over `.env`. It holds the decrypted runtime values, is gitignored, and excludes `DOTENV_*` and `VITE_*` so the dev Worker sees exactly the names the deployed Worker sees.
+
+Without a private key that step writes nothing and `pnpm dev` still runs, just without those values. Run `pnpm run dev:vars` by hand after changing `.env`.
+
+`pnpm run deploy:production` decrypts `.env.production`, uploads every non-`VITE_` value it declares as a Worker secret, then deploys. `VITE_` values are build-time only and are inlined by Vite instead. The upload only creates and updates, so a secret set straight on the Worker and absent from `.env.production` is left alone rather than deleted. The flip side is that adding a name to `.env.production` puts it under dotenvx from then on, and the next deploy overwrites whatever the Worker currently holds for it.
 
 After changes land on `main`, automation updates a release pull request that applies the pending versions and changelogs. Merging any pull request into `main` also validates and redeploys the Cloudflare Worker.

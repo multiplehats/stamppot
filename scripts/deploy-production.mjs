@@ -13,12 +13,10 @@
 // upload. Values still come from process.env, because that is where dotenvx put them.
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { runtimeKeys } from "./env-file.mjs";
 
 const ENV_FILE = "apps/edge/.env.production";
 const WRANGLER_CONFIG = "dist/stamppot/wrangler.json";
-const NON_RUNTIME_PREFIX = /^(?:DOTENV_|VITE_)/;
-const DECLARATION = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/;
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { stdio: "inherit", ...options });
@@ -32,21 +30,10 @@ function run(command, args, options = {}) {
   }
 }
 
-function declaredKeys(file) {
-  const keys = [];
-  for (const line of readFileSync(file, "utf8").split("\n")) {
-    const key = DECLARATION.exec(line)?.[1];
-    if (key !== undefined && !NON_RUNTIME_PREFIX.test(key)) {
-      keys.push(key);
-    }
-  }
-  return keys;
-}
-
 function collectRuntimeSecrets() {
   const secrets = {};
   const missing = [];
-  for (const key of declaredKeys(ENV_FILE)) {
+  for (const key of runtimeKeys(ENV_FILE)) {
     const value = process.env[key];
     if (value === undefined || value === "") {
       missing.push(key);
