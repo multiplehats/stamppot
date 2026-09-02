@@ -47,6 +47,8 @@ Secrets live in `apps/edge/.env*`, encrypted with [dotenvx](https://dotenvx.com/
 
 Decrypting requires the private key. Maintainers hold it through dotenvx Armor; CI reads `DOTENV_PRIVATE_KEY_CI` and `DOTENV_PRIVATE_KEY_PRODUCTION` from repository secrets. Pull requests from forks cannot read those secrets, so CI falls back to running `pnpm check` without the decrypted values. Contributors do not need a key.
 
+Wrangler reads `apps/edge/.env` itself when it starts the local dev and test Workers, and it does that with the file on disk rather than with anything dotenvx has decrypted. Those Workers therefore see the literal `encrypted:...` ciphertext under `env.<KEY>`, not the real value. Nothing reads these keys yet, so nothing is broken, but do not trust `env.<KEY>` in `pnpm dev` or in a test. Set `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false` to keep the ciphertext out, and pass real values explicitly through the `miniflare.bindings` option in `vitest.config.ts` when a test genuinely needs one.
+
 `pnpm run deploy:production` decrypts `.env.production`, uploads every non-`VITE_` value it declares as a Worker secret, then deploys. `VITE_` values are build-time only and are inlined by Vite instead. Secrets managed outside that file, such as `NS_API_KEY`, are never touched: the upload creates and updates, and deletes nothing.
 
 After changes land on `main`, automation updates a release pull request that applies the pending versions and changelogs. Merging any pull request into `main` also validates and redeploys the Cloudflare Worker.
