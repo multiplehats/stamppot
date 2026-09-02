@@ -54,6 +54,31 @@ describe("extractWindowConfig", () => {
       )
     ).toBeUndefined();
   });
+
+  it("ignores a decoy window.__CONFIG__ mention before the real assignment", () => {
+    const decoy = "<p>window.__CONFIG__ from the seller {haha}</p>";
+    const real =
+      '<script>window.__CONFIG__ = {"listing":{"itemId":"m5"}};</script>';
+
+    const config = extractWindowConfig(
+      `${decoy}${real}`
+    ) as FixtureWindowConfig;
+
+    expect(config.listing?.itemId).toBe("m5");
+  });
+
+  it("continues past an unbalanced assignment to a later valid one", () => {
+    const broken =
+      '<script>window.__CONFIG__ = {"listing":{"itemId":"m1"</script>';
+    const valid =
+      '<script>window.__CONFIG__ = {"listing":{"itemId":"m7"}};</script>';
+
+    const config = extractWindowConfig(
+      `${broken}${valid}`
+    ) as FixtureWindowConfig;
+
+    expect(config.listing?.itemId).toBe("m7");
+  });
 });
 
 describe("extractListingDom", () => {
@@ -79,13 +104,32 @@ describe("extractListingDom", () => {
     expect(dom.description).toBe("It's 'ok' <b>bold</b>");
   });
 
-  it("caps a description longer than the maximum at the bound", async () => {
+  it("caps a description longer than the maximum and flags it as truncated", async () => {
     const longDescription = "a".repeat(MAX_DESCRIPTION_CHARACTERS + 1000);
     const html = `<div data-collapsable="description">${longDescription}</div>`;
 
     const dom = await extractListingDom(html);
 
     expect(dom.description).toHaveLength(MAX_DESCRIPTION_CHARACTERS);
+    expect(dom.descriptionTruncated).toBe(true);
+  });
+
+  it("leaves descriptionTruncated unset for a description within the bound", async () => {
+    const html =
+      '<div data-collapsable="description">Short and complete.</div>';
+
+    const dom = await extractListingDom(html);
+
+    expect(dom.descriptionTruncated).toBeUndefined();
+  });
+
+  it("caps an over-long attribute value so the listing schema accepts it", async () => {
+    const longValue = "b".repeat(500);
+    const html = `<div class="Attributes-module-label">Kleur</div><div class="Attributes-module-value">${longValue}</div>`;
+
+    const dom = await extractListingDom(html);
+
+    expect(dom.attributes[0]?.value).toHaveLength(300);
   });
 
   it("bounds more than 20 attribute pairs to 20", async () => {

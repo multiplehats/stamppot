@@ -46,6 +46,18 @@ export class UpstreamUnavailableError extends Error {
   }
 }
 
+/**
+ * A per-read limiter refused this network read. It is raised by an
+ * `onBeforeFetch` hook and must travel untouched to the operation boundary, so a
+ * client that maps other failures to `UpstreamUnavailableError` re-throws it.
+ */
+export class UpstreamRateLimitedError extends Error {
+  constructor() {
+    super("Upstream read was rate limited");
+    this.name = "UpstreamRateLimitedError";
+  }
+}
+
 /** Non-2xx upstream answer. It never escapes the client that raised it. */
 export class UpstreamStatusError extends Error {
   readonly location: string | undefined;
@@ -98,6 +110,13 @@ export interface UpstreamRequest {
   readonly cache: UpstreamCache;
   readonly fetchImplementation?: UpstreamFetch;
   readonly headers?: Readonly<Record<string, string>>;
+  /**
+   * Runs on a cache miss, immediately before the network read and never on a
+   * cache hit, so a caller can charge a per-read rate limiter for the reads that
+   * actually reach an upstream. It may reject with `UpstreamRateLimitedError` to
+   * refuse the read.
+   */
+  readonly onBeforeFetch?: () => Promise<void>;
   readonly signal: AbortSignal;
   readonly timeoutMs: number;
   readonly ttlSeconds: number;
@@ -150,6 +169,10 @@ async function fetchUpstream<T>(
   if (cached !== undefined) {
     return parse(cached);
   }
+
+  // Only a cache miss reaches an upstream, so the per-read limiter is charged
+  // here rather than once per operation: a warm cache costs no capacity.
+  await request.onBeforeFetch?.();
 
   const fetchImplementation =
     request.fetchImplementation ?? globalUpstreamFetch;

@@ -23,7 +23,7 @@ Marktplaats' Gebruiksvoorwaarden (22 juli 2026) constrain what a client may do w
 
 The bounds in this release answer each of those directly:
 
-- `limit` is 1-30 per call and `offset` is capped at 270, so a single caller can never retrieve more than 300 listings across a paged search, well under the 100-listing personal-use ceiling the ToS names for its own RSS feeds, applied here per call rather than per session.
+- `limit` is 1-30 per call and `offset + limit` may not exceed 100, so a single query can page through at most 100 listings, matching the 100-listing personal-use ceiling the ToS names for its own RSS feeds.
 - A search result is cached for 60 seconds, a listing for 120 seconds, and a resolved place for 24 hours, all keyed on the upstream URL, so repeat calls for the same query or listing do not repeat the retrieval.
 - A per-IP rate limiter (`MARKTPLAATS_UPSTREAM_READS`, namespace id `1763268923`) allows 30 upstream reads per 60 seconds, which bounds "systematic" retrieval at the account level regardless of cache hits.
 - Requests carry an honest `User-Agent: stamppot (+https://stamppot.dev)` rather than impersonating a browser.
@@ -38,7 +38,7 @@ Because `find_marktplaats_listings` accepts a `place` name for convenience, that
 
 ## The stateless cursor model
 
-`find_marktplaats_listings` takes `postedSince`, an ISO instant, and returns `observedAt`, the instant the search was actually run. An agent polling daily for new PS5 listings passes the previous call's `observedAt` back as the next call's `postedSince` and gets only listings posted after that point. Stamppot does not track which ids a caller has already seen, does not accept a saved query, and does not run anything on a schedule.
+`find_marktplaats_listings` takes `postedSince`, an ISO instant, and returns `observedAt`, the instant the returned snapshot was fetched. A fresh search reports the moment it ran; a search served from the 60-second cache reports the earliest instant its snapshot could have been fetched rather than the request time, so an agent that advances its cursor by `observedAt` re-reads a small overlap instead of skipping a listing posted during the cache window. An agent polling daily for new PS5 listings passes the previous call's `observedAt` back as the next call's `postedSince` and gets only listings posted after that point. Stamppot does not track which ids a caller has already seen, does not accept a saved query, and does not run anything on a schedule.
 
 This is deliberate, not a missing feature. A server-side saved watch needs an identity to save it against, a scheduler to run it, and a notification channel to deliver a result through, none of which this package has any way to do safely without accounts, and all of which the calling agent or its harness already has. The stateless cursor is the smallest primitive that makes a daily poll correct without Stamppot taking on any of that. See [Explicitly deferred](#explicitly-deferred).
 

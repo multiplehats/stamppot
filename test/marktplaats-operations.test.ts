@@ -119,7 +119,7 @@ describe("Marktplaats operations", () => {
     }
   });
 
-  it("consumes the limiter with scope search before calling the listings service", async () => {
+  it("charges the limiter with scope search for each upstream read a search performs", async () => {
     const callOrder: string[] = [];
     const limiter: MarktplaatsUpstreamLimiter = {
       consume(_request, scope) {
@@ -128,22 +128,33 @@ describe("Marktplaats operations", () => {
       },
     };
     const listings: ListingSearchService = {
-      search() {
+      async search(_query, callContext) {
         callOrder.push("listings:search");
-        return emptySearchResult();
+        // A real client charges the limiter for the read it is about to make.
+        await callContext.chargeUpstreamRead?.();
+        return {
+          categorySuggestions: [],
+          listings: [],
+          observedAt: NOW.toISOString(),
+        };
       },
     };
     const registry = operations({ listings, upstreamLimiter: limiter });
 
     await invoke(registry, "find_marktplaats_listings", { query: "ps5" });
 
-    expect(callOrder).toEqual(["limiter:search", "listings:search"]);
+    expect(callOrder).toEqual(["listings:search", "limiter:search"]);
   });
 
-  it("returns rate_limited without calling any service when the limiter denies", async () => {
+  it("returns rate_limited when a search read is refused by the limiter", async () => {
+    const listings: ListingSearchService = {
+      async search(_query, callContext) {
+        await callContext.chargeUpstreamRead?.();
+        return emptySearchResult();
+      },
+    };
     const registry = operations({
-      listingDetail: unusedListingDetail(),
-      listings: unusedListings(),
+      listings,
       locations: unusedLocations(),
       upstreamLimiter: denyingLimiter(),
     });
@@ -155,6 +166,20 @@ describe("Marktplaats operations", () => {
       retryable: true,
       status: "rate_limited",
     });
+  });
+
+  it("returns rate_limited when a listing read is refused by the limiter", async () => {
+    const listingDetail: ListingDetailService = {
+      async read(_input, callContext) {
+        await callContext.chargeUpstreamRead?.();
+        throw new Error("read must stop at the refused charge");
+      },
+    };
+    const registry = operations({
+      listingDetail,
+      upstreamLimiter: denyingLimiter(),
+    });
+
     await expect(
       invoke(registry, "get_marktplaats_listing", { id: "m2437783300" })
     ).resolves.toEqual({
@@ -162,6 +187,21 @@ describe("Marktplaats operations", () => {
       retryable: true,
       status: "rate_limited",
     });
+  });
+
+  it("does not charge the limiter when a service serves entirely from cache", async () => {
+    const listings: ListingSearchService = {
+      search: () => emptySearchResult(),
+    };
+    const registry = operations({
+      listings,
+      locations: unusedLocations(),
+      upstreamLimiter: denyingLimiter(),
+    });
+
+    await expect(
+      invoke(registry, "find_marktplaats_listings", { query: "ps5" })
+    ).resolves.toMatchObject({ status: "ok" });
   });
 
   it("resolves a place before searching and echoes it as resolvedLocation", async () => {
@@ -251,7 +291,7 @@ describe("Marktplaats operations", () => {
     ).rejects.toThrow("Marktplaats operation dependency failed");
   });
 
-  it("consumes the limiter with scope listing and maps unknown_listing", async () => {
+  it("charges the limiter with scope listing and maps unknown_listing", async () => {
     const callOrder: string[] = [];
     const limiter: MarktplaatsUpstreamLimiter = {
       consume(_request, scope) {
@@ -259,8 +299,14 @@ describe("Marktplaats operations", () => {
         return Promise.resolve(true);
       },
     };
+    const listingDetail: ListingDetailService = {
+      async read(_input, callContext) {
+        await callContext.chargeUpstreamRead?.();
+        throw new UnknownListingError();
+      },
+    };
     const registry = operations({
-      listingDetail: failingListingDetail(new UnknownListingError()),
+      listingDetail,
       upstreamLimiter: limiter,
     });
 
@@ -338,13 +384,33 @@ describe("Marktplaats operations", () => {
     ).toBe(false);
   });
 
-  it("rejects an offset above 270", () => {
+  it("rejects an offset above 99", () => {
     expect(
       findMarktplaatsListingsInputSchema.safeParse({
-        offset: 271,
+        offset: 100,
         query: "ps5",
       }).success
     ).toBe(false);
+  });
+
+  it("rejects an offset plus limit beyond the 100-listing window", () => {
+    expect(
+      findMarktplaatsListingsInputSchema.safeParse({
+        limit: 30,
+        offset: 90,
+        query: "ps5",
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts an offset plus limit at the 100-listing window", () => {
+    expect(
+      findMarktplaatsListingsInputSchema.safeParse({
+        limit: 30,
+        offset: 70,
+        query: "ps5",
+      }).success
+    ).toBe(true);
   });
 
   it("rejects a radiusKm above 200", () => {

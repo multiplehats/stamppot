@@ -5,6 +5,7 @@ import {
   trimUpstreamText,
   type UpstreamCache,
   type UpstreamFetch,
+  UpstreamRateLimitedError,
   UpstreamUnavailableError,
 } from "@stamppot/upstream";
 import { z } from "zod";
@@ -38,12 +39,15 @@ const pdokDocumentSchema = z
   })
   .loose();
 
+/**
+ * The `response` wrapper and its `docs` array are required, so a parseable but
+ * unusable payload such as `{}` or a PDOK error envelope fails validation and
+ * becomes `upstream_unavailable`. A present-but-empty `docs` array is a genuine
+ * "no such place" and still resolves to `unknown_place`.
+ */
 const pdokResponseSchema = z
   .object({
-    response: z
-      .object({ docs: z.array(pdokDocumentSchema).optional() })
-      .loose()
-      .optional(),
+    response: z.object({ docs: z.array(pdokDocumentSchema) }).loose(),
   })
   .loose();
 
@@ -168,6 +172,7 @@ export class PdokLocationResolver implements LocationResolver {
         cache: this.#cache,
         fetchImplementation: this.#fetchImplementation,
         headers: REQUEST_HEADERS,
+        ...optionalField("onBeforeFetch", context.chargeUpstreamRead),
         signal: context.signal,
         timeoutMs: PDOK_TIMEOUT_MS,
         ttlSeconds: PLACE_CACHE_TTL_SECONDS,
@@ -177,7 +182,10 @@ export class PdokLocationResolver implements LocationResolver {
       if (context.signal.aborted) {
         throw error;
       }
-      if (error instanceof UpstreamUnavailableError) {
+      if (
+        error instanceof UpstreamUnavailableError ||
+        error instanceof UpstreamRateLimitedError
+      ) {
         throw error;
       }
       // biome-ignore lint/style/useErrorCause: Upstream detail must not reach a public error.
@@ -187,6 +195,6 @@ export class PdokLocationResolver implements LocationResolver {
     if (!parsed.success) {
       throw new UpstreamUnavailableError();
     }
-    return parsed.data.response?.docs?.[0];
+    return parsed.data.response.docs[0];
   }
 }

@@ -35,7 +35,7 @@ Let op de prijssoort voordat je een bedrag noemt. `priceCents` is alleen een vas
 
 ## Bron, versheid en fouten
 
-De advertenties komen van [Marktplaats](https://www.marktplaats.nl/), een **onofficiële bron**: er is geen publieke API en geen beschikbaarheidsgarantie. De Gebruiksvoorwaarden van Marktplaats staan het kopiëren van advertentiegegevens alleen toe voor persoonlijk gebruik, tot maximaal honderd advertenties, en verbieden herhaald systematisch ophalen. Daarom is `limit` begrensd op 30, `offset` op 270 en geldt er een rate limit per aanroepend adres. Gebruik de tool zoals een mens dat zou doen en bouw er geen eigen kopie van Marktplaats mee.
+De advertenties komen van [Marktplaats](https://www.marktplaats.nl/), een **onofficiële bron**: er is geen publieke API en geen beschikbaarheidsgarantie. De Gebruiksvoorwaarden van Marktplaats staan het kopiëren van advertentiegegevens alleen toe voor persoonlijk gebruik, tot maximaal honderd advertenties, en verbieden herhaald systematisch ophalen. Daarom is `limit` begrensd op 30 en mag `offset` plus `limit` niet boven de 100 uitkomen, zodat één zoekopdracht hoogstens honderd advertenties kan doorbladeren, en geldt er een rate limit per aanroepend adres. Gebruik de tool zoals een mens dat zou doen en bouw er geen eigen kopie van Marktplaats mee.
 
 Een zoekresultaat is een momentopname die maximaal 60 seconden is gecached; een opgevraagde advertentie maximaal 120 seconden. Er komen nooit coördinaten, telefoonnummers of andere directe contactgegevens terug.
 

@@ -8,6 +8,7 @@ import {
   trimUpstreamText,
   type UpstreamCache,
   type UpstreamFetch,
+  UpstreamRateLimitedError,
   UpstreamStatusError,
   UpstreamUnavailableError,
 } from "@stamppot/upstream";
@@ -48,12 +49,16 @@ const CONDITION_ATTRIBUTE_LABEL = "Conditie";
 const CONSUMER_SELLER_TYPE = "CONSUMER";
 const NOT_FOUND_STATUS = 404;
 const REDIRECT_STATUSES = new Set([301, 302, 307, 308]);
+
 /**
  * A listing id redirects twice before it lands on its canonical path. Only that
- * shape is followed, so a redirect can never walk the Worker onto another page.
+ * shape carrying the requested id is followed, so a redirect can never walk the
+ * Worker onto another advert and cache it under the requested id. The id is
+ * validated as `m` plus digits upstream, so it holds no regex metacharacters.
  */
-const CANONICAL_LISTING_PATH_PATTERN =
-  /^\/v\/[a-z0-9-]+\/[a-z0-9-]+\/m\d+-[^/]*$/;
+function canonicalListingPathPattern(id: string): RegExp {
+  return new RegExp(`^/v/[a-z0-9-]+/[a-z0-9-]+/${id}-[^/]*$`);
+}
 
 /** Present-or-absent passthrough: every upstream field is read defensively. */
 const looseValue = z.unknown().optional();
@@ -209,7 +214,12 @@ export class MarktplaatsListingClient implements ListingDetailService {
       return { listing: cached, observedAt };
     }
 
-    const page = await this.#fetchFollowing(key, MAX_REDIRECT_HOPS, context);
+    const page = await this.#fetchFollowing(
+      key,
+      id,
+      MAX_REDIRECT_HOPS,
+      context
+    );
     const listing = await this.#listing(id, page, context);
     await this.#writeCache(key, listing);
     return { listing, observedAt };
@@ -306,7 +316,10 @@ export class MarktplaatsListingClient implements ListingDetailService {
       },
       ...optionalField("condition", conditionFromLabel(conditionLabel)),
       ...optionalField("description", dom.description ?? fallbackDescription),
-      ...(dom.description === undefined && fallbackDescription !== undefined
+      // Truncated when the DOM description hit its cap, or when the shorter
+      // JSON-LD fallback stood in for a missing DOM description.
+      ...(dom.descriptionTruncated === true ||
+      (dom.description === undefined && fallbackDescription !== undefined)
         ? { descriptionTruncated: true }
         : {}),
       ...optionalField(
@@ -342,6 +355,7 @@ export class MarktplaatsListingClient implements ListingDetailService {
    */
   async #fetchFollowing(
     url: string,
+    id: string,
     hopsLeft: number,
     context: MarktplaatsCallContext
   ): Promise<FetchedPage> {
@@ -352,6 +366,7 @@ export class MarktplaatsListingClient implements ListingDetailService {
         cache: noUpstreamCache,
         fetchImplementation: this.#fetchImplementation,
         headers: REQUEST_HEADERS,
+        ...optionalField("onBeforeFetch", context.chargeUpstreamRead),
         signal: context.signal,
         timeoutMs: MARKTPLAATS_TIMEOUT_MS,
         ttlSeconds: LISTING_CACHE_TTL_SECONDS,
@@ -361,17 +376,21 @@ export class MarktplaatsListingClient implements ListingDetailService {
       if (context.signal.aborted) {
         throw error;
       }
-      return await this.#followRedirect(url, hopsLeft, context, error);
+      return await this.#followRedirect(url, id, hopsLeft, context, error);
     }
     return { html, url };
   }
 
   #followRedirect(
     url: string,
+    id: string,
     hopsLeft: number,
     context: MarktplaatsCallContext,
     error: unknown
   ): Promise<FetchedPage> {
+    if (error instanceof UpstreamRateLimitedError) {
+      throw error;
+    }
     if (!(error instanceof UpstreamStatusError)) {
       throw new UpstreamUnavailableError();
     }
@@ -392,12 +411,15 @@ export class MarktplaatsListingClient implements ListingDetailService {
       // biome-ignore lint/style/useErrorCause: Upstream detail must not reach a public error.
       throw new UpstreamUnavailableError();
     }
+    // A redirect must land on the canonical path for the requested id: a
+    // canonical path for another advert is rejected rather than fetched and
+    // cached under the requested id.
     if (
       next.origin !== MARKTPLAATS_ORIGIN ||
-      !CANONICAL_LISTING_PATH_PATTERN.test(next.pathname)
+      !canonicalListingPathPattern(id).test(next.pathname)
     ) {
       throw new UpstreamUnavailableError();
     }
-    return this.#fetchFollowing(next.toString(), hopsLeft - 1, context);
+    return this.#fetchFollowing(next.toString(), id, hopsLeft - 1, context);
   }
 }

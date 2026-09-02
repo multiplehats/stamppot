@@ -3,7 +3,13 @@ import { MARKTPLAATS_SOURCE, PDOK_SOURCE } from "./marktplaats-format";
 
 export const MAX_LISTINGS = 30;
 export const DEFAULT_LISTINGS = 10;
-export const MAX_OFFSET = 270;
+/**
+ * The accessible result window: `offset + limit` may never exceed this, so a
+ * single query can reach at most 100 listings, matching the personal-use ceiling
+ * the ToS names for its own RSS feeds.
+ */
+export const MAX_RESULT_WINDOW = 100;
+export const MAX_OFFSET = MAX_RESULT_WINDOW - 1;
 export const MAX_RADIUS_KM = 200;
 export const DEFAULT_RADIUS_KM = 25;
 export const MAX_DESCRIPTION_CHARACTERS = 4000;
@@ -207,7 +213,7 @@ export const findMarktplaatsListingsInputSchema = z
       .max(MAX_OFFSET)
       .default(0)
       .describe(
-        "How many listings to skip, from 0 through 270, for paging through totalCount. Defaults to 0."
+        "How many listings to skip, from 0 through 99, for paging through totalCount. Defaults to 0. offset plus limit may not exceed 100, the personal-use ceiling on how far a single query may page."
       ),
     parentCategoryId: positiveIdSchema
       .optional()
@@ -254,7 +260,10 @@ export const findMarktplaatsListingsInputSchema = z
   .refine(
     (input) => input.sortBy !== "distance" || input.location !== undefined,
     { message: "sortBy 'distance' requires location" }
-  );
+  )
+  .refine((input) => input.offset + input.limit <= MAX_RESULT_WINDOW, {
+    message: "offset plus limit must not exceed 100",
+  });
 
 export const marktplaatsListingSummarySchema = z
   .object({

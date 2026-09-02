@@ -30,12 +30,26 @@ type DownloadResult =
   | { image: DownloadedImage; ok: true }
   | { error: string; ok: false; url: string };
 
+// Enforce the byte cap while streaming rather than after buffering the whole
+// body: an image host that omits or understates Content-Length cannot make four
+// concurrent downloads allocate far beyond the advertised bound, because the
+// read is cancelled the moment the accumulated size crosses it.
 const readBoundedBody = async (response: Response): Promise<string> => {
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength > MAX_IMAGE_BYTES) {
-    throw new Error("The image exceeded the 2 MiB limit.");
+  if (response.body === null) {
+    throw new Error("The image response had no body.");
   }
-  return Buffer.from(bytes).toString("base64");
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  // Leaving the async iteration early cancels the underlying stream, so an
+  // oversized body is abandoned rather than downloaded in full.
+  for await (const chunk of response.body as AsyncIterable<Uint8Array>) {
+    total += chunk.byteLength;
+    if (total > MAX_IMAGE_BYTES) {
+      throw new Error("The image exceeded the 2 MiB limit.");
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString("base64");
 };
 
 const downloadImage = async (

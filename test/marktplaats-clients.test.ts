@@ -2,6 +2,7 @@ import {
   MemoryUpstreamCache,
   type UpstreamCache,
   type UpstreamFetch,
+  UpstreamRateLimitedError,
   UpstreamUnavailableError,
 } from "@stamppot/upstream";
 import { describe, expect, it } from "vitest";
@@ -14,6 +15,7 @@ import pdokWoonplaatsText from "../packages/mcp-marktplaats/fixtures/pdok-woonpl
 import {
   findMarktplaatsListingsInputSchema,
   PLACE_CACHE_TTL_SECONDS,
+  SEARCH_CACHE_TTL_SECONDS,
   UnknownListingError,
   UnknownPlaceError,
 } from "../packages/mcp-marktplaats/src/contracts";
@@ -310,6 +312,81 @@ describe("MarktplaatsSearchClient", () => {
     const searchWrites = cache.writes.filter((url) => url === calls[0]?.url);
     expect(searchWrites).toHaveLength(1);
   });
+
+  it("reports observedAt one cache TTL earlier for a snapshot served from cache", async () => {
+    const input = findMarktplaatsListingsInputSchema.parse({ query: "ps5" });
+    const { client } = searchClient(() => jsonResponse(searchText));
+
+    const fresh = await client.search({ input }, context());
+    const cached = await client.search({ input }, context());
+
+    expect(fresh.observedAt).toBe(NOW.toISOString());
+    expect(cached.observedAt).toBe(
+      new Date(NOW.getTime() - SEARCH_CACHE_TTL_SECONDS * 1000).toISOString()
+    );
+  });
+
+  it("charges one upstream read for a fresh search and none from cache", async () => {
+    const input = findMarktplaatsListingsInputSchema.parse({ query: "ps5" });
+    const { client } = searchClient(() => jsonResponse(searchText));
+    let charges = 0;
+    const ctx = {
+      ...context(),
+      chargeUpstreamRead: () => {
+        charges += 1;
+        return Promise.resolve();
+      },
+    };
+
+    await client.search({ input }, ctx);
+    await client.search({ input }, ctx);
+
+    expect(charges).toBe(1);
+  });
+
+  it("propagates a refused read as UpstreamRateLimitedError", async () => {
+    const input = findMarktplaatsListingsInputSchema.parse({ query: "ps5" });
+    const { client } = searchClient(() => jsonResponse(searchText));
+    const ctx = {
+      ...context(),
+      chargeUpstreamRead: () => Promise.reject(new UpstreamRateLimitedError()),
+    };
+
+    await expect(client.search({ input }, ctx)).rejects.toBeInstanceOf(
+      UpstreamRateLimitedError
+    );
+  });
+
+  it("treats an incomplete search envelope as unavailable", async () => {
+    const input = findMarktplaatsListingsInputSchema.parse({ query: "ps5" });
+    const { client } = searchClient(() => jsonResponse("{}"));
+
+    await expect(client.search({ input }, context())).rejects.toBeInstanceOf(
+      UpstreamUnavailableError
+    );
+  });
+
+  it("returns a genuine empty result for an empty search envelope", async () => {
+    const input = findMarktplaatsListingsInputSchema.parse({ query: "ps5" });
+    const { client } = searchClient(() => jsonResponse(searchEmptyText));
+
+    const result = await client.search({ input }, context());
+
+    expect(result.listings).toEqual([]);
+    expect(result.totalCount).toBe(0);
+  });
+
+  it("keeps the price range ascending for a very high open-ended minimum", async () => {
+    const input = findMarktplaatsListingsInputSchema.parse({
+      minPriceEuro: 2_000_000,
+      query: "ps5",
+    });
+    const { calls, client } = searchClient(() => jsonResponse(searchText));
+
+    await client.search({ input }, context());
+
+    expect(calls[0]?.url).toContain("PriceCents%3A200000000%3A200000000");
+  });
 });
 
 describe("PdokLocationResolver", () => {
@@ -369,6 +446,30 @@ describe("PdokLocationResolver", () => {
     await expect(
       resolver.resolve("Enschede", context())
     ).rejects.toBeInstanceOf(UpstreamUnavailableError);
+  });
+
+  it("treats a malformed envelope as unavailable rather than an unknown place", async () => {
+    const { resolver } = pdokResolver(() => jsonResponse("{}"));
+
+    await expect(
+      resolver.resolve("Enschede", context())
+    ).rejects.toBeInstanceOf(UpstreamUnavailableError);
+  });
+
+  it("charges one upstream read per PDOK lookup", async () => {
+    let charges = 0;
+    const { resolver } = pdokResolver(townAndPostcodeResponder);
+    const ctx = {
+      ...context(),
+      chargeUpstreamRead: () => {
+        charges += 1;
+        return Promise.resolve();
+      },
+    };
+
+    await resolver.resolve("Enschede", ctx);
+
+    expect(charges).toBe(2);
   });
 
   it("caches every PDOK read for a full day", async () => {
@@ -508,11 +609,24 @@ describe("MarktplaatsListingClient", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("refuses a same-origin redirect to another listing's canonical path", async () => {
+    const { calls, client } = listingClient(() =>
+      redirectResponse("/v/a-a/b-b/m9999999999-other-advert")
+    );
+
+    await expect(
+      client.read({ id: "m2437783300" }, context())
+    ).rejects.toBeInstanceOf(UpstreamUnavailableError);
+    expect(calls).toHaveLength(1);
+  });
+
   it("gives up after four chained redirects", async () => {
-    const location1 = "/v/a-a/b-b/m10001-x";
-    const location2 = "/v/a-a/b-b/m10002-x";
-    const location3 = "/v/a-a/b-b/m10003-x";
-    const location4 = "/v/a-a/b-b/m10004-x";
+    // Every hop keeps the requested id, so the hop limit rather than the id
+    // check is what makes the client give up.
+    const location1 = "/v/a-a/b-b/m2437783300-x1";
+    const location2 = "/v/a-a/b-b/m2437783300-x2";
+    const location3 = "/v/a-a/b-b/m2437783300-x3";
+    const location4 = "/v/a-a/b-b/m2437783300-x4";
     const { calls, client } = listingClient((url) => {
       if (url === idUrl) {
         return redirectResponse(location1);
@@ -556,6 +670,24 @@ describe("MarktplaatsListingClient", () => {
 
     expect(calls).toHaveLength(3);
     expect(cache.writes).toEqual([idUrl]);
+  });
+
+  it("charges one upstream read per network hop and none from cache", async () => {
+    const { client } = listingClient(twoRedirectResponder(listingHtml));
+    let charges = 0;
+    const ctx = {
+      ...context(),
+      chargeUpstreamRead: () => {
+        charges += 1;
+        return Promise.resolve();
+      },
+    };
+
+    await client.read({ id: "m2437783300" }, ctx);
+    expect(charges).toBe(3);
+
+    await client.read({ id: "m2437783300" }, ctx);
+    expect(charges).toBe(3);
   });
 
   it("falls back to the JSON-LD description when the DOM has none", async () => {

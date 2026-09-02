@@ -22,7 +22,7 @@ Neem de `id` letterlijk over uit een resultaat van `find_marktplaats_listings`. 
 }
 ```
 
-De samenvatting in een zoekresultaat is afgekapt op ongeveer 200 tekens; alleen deze tool levert de hele advertentietekst. Beoordeel de staat aan de hand van `description` in combinatie met `attributes` en `condition`, en niet op de titel alleen. Staat `descriptionTruncated: true`, dan kwam de tekst uit de verkorte samenvatting van de pagina en ontbreken er details; behandel de beschrijving dan als onvolledig.
+De samenvatting in een zoekresultaat is afgekapt op ongeveer 200 tekens; alleen deze tool levert de hele advertentietekst. Beoordeel de staat aan de hand van `description` in combinatie met `attributes` en `condition`, en niet op de titel alleen. Staat `descriptionTruncated: true`, dan is de beschrijving onvolledig — ofwel omdat ze langer was dan de limiet en is afgekapt, ofwel omdat alleen de verkorte samenvatting van de pagina beschikbaar was; behandel de beschrijving dan als onvolledig.
 
 Bij een advertentie waarop geboden kan worden bevat `bidding` het aantal biedingen, het minimale bod en het hoogste bod in centen. Wie er heeft geboden komt nooit terug. Ook telefoonnummers, bankgegevens, e-mailadressen en coördinaten komen nooit terug: alleen de naam, het type, de plaats en het aantal jaren dat de verkoper actief is.
 

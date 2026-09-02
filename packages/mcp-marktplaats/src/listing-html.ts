@@ -1,9 +1,16 @@
 import { z } from "zod";
 import { MAX_ATTRIBUTES, MAX_DESCRIPTION_CHARACTERS } from "./contracts";
 
-const WINDOW_CONFIG_MARKER = "window.__CONFIG__";
+/**
+ * The real assignment includes the `=`, so seller-controlled text that merely
+ * mentions `window.__CONFIG__` before a `{` cannot capture the scan. The `g`
+ * flag lets the reader try each occurrence until one parses.
+ */
+const WINDOW_CONFIG_ASSIGNMENT_PATTERN = /window\.__CONFIG__\s*=\s*\{/g;
 const MAX_CONFIG_SCAN_CHARACTERS = 1024 * 1024;
 const MAX_DOM_NODES = 400;
+/** Matches `upstreamTextSchema`, which rejects attribute text above 300 chars. */
+const MAX_ATTRIBUTE_TEXT_CHARACTERS = 300;
 const MAX_ENTITY_CODE_POINT = 0x10_ff_ff;
 const DESCRIPTION_SELECTOR = '[data-collapsable="description"]';
 const ATTRIBUTE_LABEL_SELECTOR = '[class*="Attributes-module-label"]';
@@ -38,6 +45,7 @@ export interface ListingAttribute {
 export interface ListingDom {
   readonly attributes: ListingAttribute[];
   readonly description?: string;
+  readonly descriptionTruncated?: boolean;
 }
 
 interface DomTextNode {
@@ -67,19 +75,27 @@ export function decodeHtmlEntities(value: string): string {
   );
 }
 
-function normalizeDescription(value: string): string {
-  return decodeHtmlEntities(value)
+/** The full DOM text, capped, with whether the cap actually dropped any tail. */
+function normalizeDescription(value: string): {
+  readonly text: string;
+  readonly truncated: boolean;
+} {
+  const normalized = decodeHtmlEntities(value)
     .replace(HORIZONTAL_WHITESPACE_PATTERN, " ")
     .replace(EXCESS_NEWLINE_PATTERN, "\n\n")
-    .trim()
-    .slice(0, MAX_DESCRIPTION_CHARACTERS);
+    .trim();
+  return {
+    text: normalized.slice(0, MAX_DESCRIPTION_CHARACTERS),
+    truncated: normalized.length > MAX_DESCRIPTION_CHARACTERS,
+  };
 }
 
 function normalizeAttributeText(value: string): string {
   return decodeHtmlEntities(value)
     .replace(HORIZONTAL_WHITESPACE_PATTERN, " ")
     .replace(EXCESS_NEWLINE_PATTERN, " ")
-    .trim();
+    .trim()
+    .slice(0, MAX_ATTRIBUTE_TEXT_CHARACTERS);
 }
 
 interface StringScanState {
@@ -135,26 +151,25 @@ function balancedObjectEnd(
  * rather than counting braces alone.
  */
 export function extractWindowConfig(html: string): unknown {
-  const markerIndex = html.indexOf(WINDOW_CONFIG_MARKER);
-  if (markerIndex < 0) {
-    return;
-  }
-  const openIndex = html.indexOf("{", markerIndex);
-  if (openIndex < 0) {
-    return;
-  }
-  const closeIndex = balancedObjectEnd(
-    html,
-    openIndex,
-    Math.min(html.length, openIndex + MAX_CONFIG_SCAN_CHARACTERS)
-  );
-  if (closeIndex === undefined) {
-    return;
-  }
-  try {
-    return JSON.parse(html.slice(openIndex, closeIndex + 1));
-  } catch {
-    // A page whose config is not valid JSON is treated as no config at all.
+  for (const match of html.matchAll(WINDOW_CONFIG_ASSIGNMENT_PATTERN)) {
+    if (match.index === undefined) {
+      continue;
+    }
+    // The pattern ends on the `{`, so the balanced scan starts there.
+    const openIndex = match.index + match[0].length - 1;
+    const closeIndex = balancedObjectEnd(
+      html,
+      openIndex,
+      Math.min(html.length, openIndex + MAX_CONFIG_SCAN_CHARACTERS)
+    );
+    if (closeIndex === undefined) {
+      continue;
+    }
+    try {
+      return JSON.parse(html.slice(openIndex, closeIndex + 1));
+    } catch {
+      // Not this occurrence; a later real assignment may still parse.
+    }
   }
 }
 
@@ -242,7 +257,8 @@ export async function extractListingDom(html: string): Promise<ListingDom> {
   const description = normalizeDescription(descriptionParts.join(""));
   return {
     attributes: pairAttributes(attributeNodes),
-    ...(description === "" ? {} : { description }),
+    ...(description.text === "" ? {} : { description: description.text }),
+    ...(description.truncated ? { descriptionTruncated: true } : {}),
   };
 }
 

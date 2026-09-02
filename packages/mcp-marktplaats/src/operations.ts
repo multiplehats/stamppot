@@ -2,6 +2,7 @@ import { defineOperation, type Operation } from "@stamppot/core";
 import {
   optionalField,
   type UpstreamLimiter,
+  UpstreamRateLimitedError,
   UpstreamUnavailableError,
 } from "@stamppot/upstream";
 import {
@@ -24,6 +25,12 @@ import { MARKTPLAATS_SOURCE, PDOK_SOURCE } from "./marktplaats-format";
 const WHITESPACE_PATTERN = /\s+/g;
 
 export interface MarktplaatsCallContext {
+  /**
+   * Charges the per-read rate limiter for one upstream read, rejecting with
+   * `UpstreamRateLimitedError` when the caller's budget is spent. A client
+   * passes it as `onBeforeFetch` so only reads that miss the cache count.
+   */
+  readonly chargeUpstreamRead?: () => Promise<void>;
   readonly now: Date;
   readonly signal: AbortSignal;
 }
@@ -118,6 +125,25 @@ function normalizedPostcode(postcode: string): string {
   return postcode.replace(WHITESPACE_PATTERN, "").toUpperCase();
 }
 
+/**
+ * One limiter token per upstream read within a scope. Passed as `onBeforeFetch`,
+ * so a place-resolving search that reaches PDOK twice and Marktplaats once
+ * spends three tokens while a fully cached call spends none, which is what keeps
+ * the documented 30-reads-per-minute bound honest regardless of cache hits.
+ */
+function upstreamReadCharge(
+  limiter: UpstreamLimiter,
+  request: Request,
+  scope: string
+): () => Promise<void> {
+  return async () => {
+    const isAllowed = await limiter.consume(request, scope);
+    if (!isAllowed) {
+      throw new UpstreamRateLimitedError();
+    }
+  };
+}
+
 export function createMarktplaatsOperations(
   dependencies: MarktplaatsMcpDependencies
 ): readonly Operation[] {
@@ -125,16 +151,16 @@ export function createMarktplaatsOperations(
     description:
       "Zoek tweedehands advertenties op Marktplaats, een onofficiële bron zonder publieke API of beschikbaarheidsgarantie. Zoek op tekst, op categorie of op beide, en filter optioneel op plaats en straal, op prijs, op staat en op de datum waarop de advertentie is aangeboden. Neem categoryId én parentCategoryId letterlijk over uit de categorySuggestions van een eerdere aanroep; een subcategorie zonder zijn bovenliggende categorie wordt door de bron genegeerd. Het antwoord is een kortstondig gecachte momentopname: geef de observedAt van deze aanroep mee als postedSince van de volgende om alleen nieuwe advertenties te zien. Kent de bron een plaatsnaam niet, dan volgt unknown_place; probeer dan een andere schrijfwijze of geef een postcode mee. De samenvattingen zijn afgekapt, dus gebruik get_marktplaats_listing om de staat van een advertentie echt te beoordelen.",
     async execute(context, input) {
-      const callContext = { now: context.now(), signal: context.signal };
-      try {
-        const isAllowed = await dependencies.upstreamLimiter.consume(
+      const callContext: MarktplaatsCallContext = {
+        chargeUpstreamRead: upstreamReadCharge(
+          dependencies.upstreamLimiter,
           context.request,
           "search"
-        );
-        if (!isAllowed) {
-          return rateLimitedResult();
-        }
-
+        ),
+        now: context.now(),
+        signal: context.signal,
+      };
+      try {
         const place = input.location?.place;
         const resolvedPlace =
           place === undefined
@@ -169,6 +195,9 @@ export function createMarktplaatsOperations(
           ...optionalField("totalCount", result.totalCount),
         };
       } catch (error) {
+        if (error instanceof UpstreamRateLimitedError) {
+          return rateLimitedResult();
+        }
         if (error instanceof UnknownPlaceError) {
           return { retryable: false, status: "unknown_place" as const };
         }
@@ -189,14 +218,12 @@ export function createMarktplaatsOperations(
       "Lees één Marktplaats-advertentie volledig uit, via een onofficiële bron zonder publieke API of beschikbaarheidsgarantie. Neem de id letterlijk over uit een resultaat van find_marktplaats_listings. Alleen deze tool geeft de volledige beschrijving en de kenmerkentabel terug; daarmee beoordeel je de staat, de compleetheid en de leveringsvoorwaarden, want de samenvatting in een zoekresultaat is afgekapt. Verder volgen de prijs en prijssoort, de biedingen, de categorie, het aantal weergaven en een beknopt verkopersprofiel. Telefoonnummers, coördinaten en de namen van bieders komen nooit terug. Het antwoord is een momentopname van maximaal twee minuten oud; een onbekende of ingetrokken advertentie geeft unknown_listing.",
     async execute(context, input) {
       try {
-        const isAllowed = await dependencies.upstreamLimiter.consume(
-          context.request,
-          "listing"
-        );
-        if (!isAllowed) {
-          return rateLimitedResult();
-        }
         const result = await dependencies.listingDetail.read(input, {
+          chargeUpstreamRead: upstreamReadCharge(
+            dependencies.upstreamLimiter,
+            context.request,
+            "listing"
+          ),
           now: context.now(),
           signal: context.signal,
         });
@@ -207,6 +234,9 @@ export function createMarktplaatsOperations(
           status: "ok" as const,
         };
       } catch (error) {
+        if (error instanceof UpstreamRateLimitedError) {
+          return rateLimitedResult();
+        }
         if (error instanceof UnknownListingError) {
           return { retryable: false, status: "unknown_listing" as const };
         }

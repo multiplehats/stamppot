@@ -70,6 +70,17 @@ function listingRedirectRespond(): Response {
   });
 }
 
+/** Redirects `/m<id>` to a canonical path that carries the same `<id>`. */
+function listingRedirectForRequestedId(url: string): Response {
+  const id = new URL(url).pathname.slice(1);
+  return new Response(null, {
+    headers: {
+      location: `/v/spelcomputers-en-games/spelcomputers-sony-playstation-5/${id}-ps5-disk-edition`,
+    },
+    status: 301,
+  });
+}
+
 function callTool(name: string, body: unknown): Promise<Response> {
   return SELF.fetch(`https://stamppot.test/v1/tools/${name}`, {
     body: JSON.stringify(body),
@@ -169,9 +180,10 @@ describe("Stamppot Worker Marktplaats routes", () => {
   it("serves a repeated listing read from the Workers cache without new upstream calls", async () => {
     // A fresh id, distinct from the listing read in the previous test: the
     // Workers Cache persists across tests in this file, so reusing that id
-    // would make the "first" read below a cache hit too and prove nothing.
+    // would make the "first" read below a cache hit too and prove nothing. The
+    // redirect must carry that same id, or the listing client rejects it.
     stubUpstreams([
-      [LISTING_ID_HOST, listingRedirectRespond],
+      [LISTING_ID_HOST, listingRedirectForRequestedId],
       [LISTING_CANONICAL_HOST, () => html(listingHtml)],
     ]);
 
@@ -185,6 +197,26 @@ describe("Stamppot Worker Marktplaats routes", () => {
     await expect(first.json()).resolves.toMatchObject({ status: "ok" });
     await expect(second.json()).resolves.toMatchObject({ status: "ok" });
     expect(upstreamCalls).toHaveLength(2);
+  });
+
+  it("refuses a listing redirect that points at a different advert", async () => {
+    // `/m8888888888` redirects to a canonical path for another advert; the
+    // client must reject it rather than return that advert under the asked id.
+    stubUpstreams([
+      [LISTING_ID_HOST, () => listingRedirectRespond()],
+      [LISTING_CANONICAL_HOST, () => html(listingHtml)],
+    ]);
+
+    const response = await callTool("get_marktplaats_listing", {
+      id: "m8888888888",
+    });
+    const bodyText = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(JSON.parse(bodyText)).toMatchObject({
+      status: "upstream_unavailable",
+    });
+    expect(bodyText).not.toContain("m2437783300");
   });
 
   it("answers upstream_unavailable in band when the search upstream is unreachable", async () => {

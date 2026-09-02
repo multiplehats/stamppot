@@ -6,6 +6,7 @@ import {
   trimUpstreamText,
   type UpstreamCache,
   type UpstreamFetch,
+  UpstreamRateLimitedError,
   UpstreamUnavailableError,
 } from "@stamppot/upstream";
 import { z } from "zod";
@@ -47,6 +48,7 @@ const RELEVANT_CATEGORIES_FACET = "RelevantCategories";
 const UNPROMOTED_PRIORITY = "NONE";
 const CENTS_PER_EURO = 100;
 const METRES_PER_KILOMETRE = 1000;
+const MILLISECONDS_PER_SECOND = 1000;
 /** The upstream price range needs both bounds, so an open end gets a wide one. */
 const MAX_PRICE_RANGE_CENTS = 100_000_000;
 const CONDITION_KEY = "condition";
@@ -110,11 +112,17 @@ const facetSchema = z
   })
   .loose();
 
+/**
+ * `listings` and `totalResultCount` are required, so a parseable error or
+ * drifted envelope such as `{}` fails validation and becomes
+ * `upstream_unavailable` rather than an apparently successful empty search: a
+ * watcher must be able to tell an upstream failure from a genuine empty result.
+ */
 const searchResponseSchema = z
   .object({
     facets: z.array(facetSchema).optional(),
-    listings: z.array(searchListingSchema).optional(),
-    totalResultCount: looseValue,
+    listings: z.array(searchListingSchema),
+    totalResultCount: z.number(),
   })
   .loose();
 
@@ -312,7 +320,9 @@ function appendPrice(
       : Math.round(input.minPriceEuro * CENTS_PER_EURO);
   const to =
     input.maxPriceEuro === undefined
-      ? MAX_PRICE_RANGE_CENTS
+      ? // An open upper end still needs a bound, and a very large `minPriceEuro`
+        // must never make `from` exceed it, which would reverse the range.
+        Math.max(MAX_PRICE_RANGE_CENTS, from)
       : Math.round(input.maxPriceEuro * CENTS_PER_EURO);
   parameters.append("attributeRanges[]", `PriceCents:${from}:${to}`);
 }
@@ -333,13 +343,17 @@ export class MarktplaatsSearchClient implements ListingSearchService {
     query: MarktplaatsSearchQuery,
     context: MarktplaatsCallContext
   ): Promise<ListingSearchResult> {
-    const value = await this.#read(this.#url(query), context);
+    let servedFromCache = true;
+    const value = await this.#read(this.#url(query), context, async () => {
+      servedFromCache = false;
+      await context.chargeUpstreamRead?.();
+    });
     const parsed = searchResponseSchema.safeParse(value);
     if (!parsed.success) {
       throw new UpstreamUnavailableError();
     }
 
-    const listings = boundedList(parsed.data.listings ?? [], MAX_UPSTREAM_ITEMS)
+    const listings = boundedList(parsed.data.listings, MAX_UPSTREAM_ITEMS)
       .flatMap((listing) => {
         const summary = listingSummary(listing, context.now);
         return summary === undefined ? [] : [summary];
@@ -349,7 +363,7 @@ export class MarktplaatsSearchClient implements ListingSearchService {
     return {
       categorySuggestions: categorySuggestions(parsed.data.facets ?? []),
       listings,
-      observedAt: context.now.toISOString(),
+      observedAt: snapshotObservedAt(context.now, servedFromCache),
       ...optionalField("totalCount", wholeNumber(parsed.data.totalResultCount)),
     };
   }
@@ -394,12 +408,17 @@ export class MarktplaatsSearchClient implements ListingSearchService {
     return `${this.#searchUrl}?${parameters.toString()}`;
   }
 
-  async #read(url: string, context: MarktplaatsCallContext): Promise<unknown> {
+  async #read(
+    url: string,
+    context: MarktplaatsCallContext,
+    onBeforeFetch: () => Promise<void>
+  ): Promise<unknown> {
     try {
       return await fetchUpstreamJson({
         cache: this.#cache,
         fetchImplementation: this.#fetchImplementation,
         headers: REQUEST_HEADERS,
+        onBeforeFetch,
         signal: context.signal,
         timeoutMs: MARKTPLAATS_TIMEOUT_MS,
         ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
@@ -409,11 +428,29 @@ export class MarktplaatsSearchClient implements ListingSearchService {
       if (context.signal.aborted) {
         throw error;
       }
-      if (error instanceof UpstreamUnavailableError) {
+      if (
+        error instanceof UpstreamUnavailableError ||
+        error instanceof UpstreamRateLimitedError
+      ) {
         throw error;
       }
       // biome-ignore lint/style/useErrorCause: Upstream detail must not reach a public error.
       throw new UpstreamUnavailableError();
     }
   }
+}
+
+/**
+ * A fresh fetch was observed now. A cache hit's snapshot is up to the cache TTL
+ * old, so the earliest instant it could have been fetched is reported instead:
+ * a watcher that advances its `postedSince` cursor by this value then re-reads a
+ * small overlap rather than skipping a listing posted during the cache window.
+ */
+function snapshotObservedAt(now: Date, servedFromCache: boolean): string {
+  if (!servedFromCache) {
+    return now.toISOString();
+  }
+  return new Date(
+    now.getTime() - SEARCH_CACHE_TTL_SECONDS * MILLISECONDS_PER_SECOND
+  ).toISOString();
 }
