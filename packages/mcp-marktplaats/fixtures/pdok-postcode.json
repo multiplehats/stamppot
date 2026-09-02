@@ -1,0 +1,13 @@
+{
+  "response": {
+    "numFound": 4297,
+    "start": 0,
+    "maxScore": 3.9846568,
+    "numFoundExact": true,
+    "docs": [
+      {
+        "postcode": "7513CN"
+      }
+    ]
+  }
+}

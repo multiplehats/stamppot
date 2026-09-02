@@ -2,8 +2,14 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "extends": ["ultracite/biome/core", "ultracite/biome/vitest"],
   "files": {
-    // Vendored agent skills. Third-party code we neither own nor ship, so it
-    // is not ours to hold to the repository's standards.
-    "includes": ["!.agents"]
+    "includes": [
+      // Vendored agent skills. Third-party code we neither own nor ship, so it
+      // is not ours to hold to the repository's standards.
+      "!.agents",
+      // Hand-curated fixture of a recorded upstream HTML response. Left unignored,
+      // Ultracite reformats and key-sorts the JSON inside its inline <script> state,
+      // breaking the exact markup/JSON shape the parser under test expects.
+      "!packages/mcp-marktplaats/fixtures/*.html"
+    ]
   }
 }

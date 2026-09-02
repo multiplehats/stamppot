@@ -1,17 +1,10 @@
-import { UpstreamUnavailableError } from "./contracts";
-
-export const NS_TIMEOUT_MS = 10_000;
-export const OVAPI_TIMEOUT_MS = 5000;
-export const DEPARTURES_CACHE_TTL_SECONDS = 30;
-export const PLANNING_CACHE_TTL_SECONDS = 60;
-
 const MAX_UPSTREAM_BODY_BYTES = 8 * 1024 * 1024;
 const WHITESPACE_PATTERN = /\s+/g;
 const COLONLESS_OFFSET_PATTERN = /^(.*T[\d:.]+)([+-])(\d{2})(\d{2})$/;
 const CANONICAL_INSTANT_PATTERN =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
-const LOCAL_WALL_CLOCK_PATTERN =
-  /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)(?:\.\d+)?$/;
+const DEFAULT_JSON_ACCEPT = "application/json";
+const DEFAULT_TEXT_ACCEPT = "text/html";
 
 export type UpstreamFetch = (
   input: string,
@@ -34,13 +27,34 @@ export interface UpstreamCache {
   ) => Promise<void>;
 }
 
+/** A cache that never remembers anything and never fails a write. */
+export const noUpstreamCache: UpstreamCache = {
+  read: () => Promise.resolve(undefined),
+  write: () => Promise.resolve(),
+};
+
+/** Rate-limits an upstream-reaching request within a named scope. */
+export interface UpstreamLimiter {
+  readonly consume: (request: Request, scope: string) => Promise<boolean>;
+}
+
+/** The upstream answered too slowly, unreachably, or with an unusable body. */
+export class UpstreamUnavailableError extends Error {
+  constructor() {
+    super("Upstream is unavailable");
+    this.name = "UpstreamUnavailableError";
+  }
+}
+
 /** Non-2xx upstream answer. It never escapes the client that raised it. */
 export class UpstreamStatusError extends Error {
+  readonly location: string | undefined;
   readonly status: number;
 
-  constructor(status: number) {
+  constructor(status: number, location?: string) {
     super(`Upstream answered with HTTP ${status}`);
     this.name = "UpstreamStatusError";
+    this.location = location;
     this.status = status;
   }
 }
@@ -80,6 +94,7 @@ export class MemoryUpstreamCache implements UpstreamCache {
 }
 
 export interface UpstreamRequest {
+  readonly accept?: string;
   readonly cache: UpstreamCache;
   readonly fetchImplementation?: UpstreamFetch;
   readonly headers?: Readonly<Record<string, string>>;
@@ -105,63 +120,6 @@ async function readBoundedText(response: Response): Promise<string> {
 }
 
 /**
- * GET-only, cache-before-fetch JSON read. Credentials travel in headers so the
- * cache key, which is the URL, never carries one.
- */
-export async function fetchUpstreamJson(
-  request: UpstreamRequest
-): Promise<unknown> {
-  request.signal.throwIfAborted();
-  const cached = await request.cache.read(request.url, request.signal);
-  if (cached !== undefined) {
-    return parseUpstreamJson(cached);
-  }
-
-  const fetchImplementation =
-    request.fetchImplementation ?? globalUpstreamFetch;
-  let response: Response;
-  try {
-    response = await fetchImplementation(request.url, {
-      headers: { accept: "application/json", ...request.headers },
-      method: "GET",
-      // workerd rejects `redirect: "error"`. A 3xx therefore arrives here as a
-      // non-ok response and is reported as unavailable, so a redirect can never
-      // carry the NS key to another host.
-      redirect: "manual",
-      signal: AbortSignal.any([
-        request.signal,
-        AbortSignal.timeout(request.timeoutMs),
-      ]),
-    });
-  } catch (error) {
-    if (request.signal.aborted) {
-      throw error;
-    }
-    // biome-ignore lint/style/useErrorCause: Upstream detail must not reach a public error.
-    throw new UpstreamUnavailableError();
-  }
-
-  if (!response.ok) {
-    throw new UpstreamStatusError(response.status);
-  }
-
-  let body: string;
-  try {
-    body = await readBoundedText(response);
-  } catch (error) {
-    if (request.signal.aborted) {
-      throw error;
-    }
-    // biome-ignore lint/style/useErrorCause: Upstream detail must not reach a public error.
-    throw new UpstreamUnavailableError();
-  }
-
-  const value = parseUpstreamJson(body);
-  await writeUpstreamCache(request, body);
-  return value;
-}
-
-/**
  * The answer is already in hand by this point, so a cache that refuses the write
  * must not turn a successful read into an availability failure. Losing the entry
  * costs a later caller one extra upstream read and nothing else.
@@ -179,6 +137,70 @@ async function writeUpstreamCache(
   }
 }
 
+/**
+ * GET-only, cache-before-fetch upstream read. Credentials travel in headers so
+ * the cache key, which is the URL, never carries one.
+ */
+async function fetchUpstream<T>(
+  request: UpstreamRequest,
+  parse: (body: string) => T
+): Promise<T> {
+  request.signal.throwIfAborted();
+  const cached = await request.cache.read(request.url, request.signal);
+  if (cached !== undefined) {
+    return parse(cached);
+  }
+
+  const fetchImplementation =
+    request.fetchImplementation ?? globalUpstreamFetch;
+  let response: Response;
+  try {
+    response = await fetchImplementation(request.url, {
+      headers: {
+        ...optionalField("accept", request.accept),
+        ...request.headers,
+      },
+      method: "GET",
+      // workerd rejects `redirect: "error"`. A 3xx therefore arrives here as a
+      // non-ok response and is reported as unavailable, so a redirect can never
+      // carry a credential to another host.
+      redirect: "manual",
+      signal: AbortSignal.any([
+        request.signal,
+        AbortSignal.timeout(request.timeoutMs),
+      ]),
+    });
+  } catch (error) {
+    if (request.signal.aborted) {
+      throw error;
+    }
+    // biome-ignore lint/style/useErrorCause: Upstream detail must not reach a public error.
+    throw new UpstreamUnavailableError();
+  }
+
+  if (!response.ok) {
+    throw new UpstreamStatusError(
+      response.status,
+      response.headers.get("location") ?? undefined
+    );
+  }
+
+  let body: string;
+  try {
+    body = await readBoundedText(response);
+  } catch (error) {
+    if (request.signal.aborted) {
+      throw error;
+    }
+    // biome-ignore lint/style/useErrorCause: Upstream detail must not reach a public error.
+    throw new UpstreamUnavailableError();
+  }
+
+  const value = parse(body);
+  await writeUpstreamCache(request, body);
+  return value;
+}
+
 function parseUpstreamJson(body: string): unknown {
   try {
     return JSON.parse(body);
@@ -186,6 +208,26 @@ function parseUpstreamJson(body: string): unknown {
     // biome-ignore lint/style/useErrorCause: Upstream body detail must not reach a public error.
     throw new UpstreamUnavailableError();
   }
+}
+
+function identity(body: string): string {
+  return body;
+}
+
+/** GET-only, cache-before-fetch JSON read. A bad body is never cached. */
+export function fetchUpstreamJson(request: UpstreamRequest): Promise<unknown> {
+  return fetchUpstream(
+    { ...request, accept: request.accept ?? DEFAULT_JSON_ACCEPT },
+    parseUpstreamJson
+  );
+}
+
+/** GET-only, cache-before-fetch text read. The body is returned verbatim. */
+export function fetchUpstreamText(request: UpstreamRequest): Promise<string> {
+  return fetchUpstream(
+    { ...request, accept: request.accept ?? DEFAULT_TEXT_ACCEPT },
+    identity
+  );
 }
 
 /** Collapses whitespace and bounds length, dropping anything empty. */
@@ -221,15 +263,6 @@ export function normalizeUpstreamInstant(value: unknown): string | undefined {
     return undefined;
   }
   return Number.isFinite(Date.parse(candidate)) ? candidate : undefined;
-}
-
-/** Keeps an OVapi wall-clock time verbatim; it carries no offset by design. */
-export function normalizeLocalWallClock(value: unknown): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const match = LOCAL_WALL_CLOCK_PATTERN.exec(value.trim());
-  return match?.[1];
 }
 
 export function boundedList<T>(values: readonly T[], maximum: number): T[] {

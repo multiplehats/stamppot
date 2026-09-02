@@ -1,12 +1,11 @@
 {
-  "name": "@stamppot/mcp-ov",
-  "version": "0.2.0",
+  "name": "@stamppot/mcp-marktplaats",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./cloudflare": "./src/cloudflare.ts",
-    "./stops-build": "./src/stops-build.ts"
+    "./cloudflare": "./src/cloudflare.ts"
   },
   "dependencies": {
     "@stamppot/core": "workspace:*",

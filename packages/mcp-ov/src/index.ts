@@ -1,6 +1,12 @@
 import { defineMcp, type McpDefinition } from "@stamppot/core";
 import { createOvOperations, type OvMcpDependencies } from "./operations";
 
+export type { UpstreamCache, UpstreamFetch } from "@stamppot/upstream";
+// biome-ignore lint/performance/noBarrelFile: This package entrypoint defines the supported public transport API.
+export {
+  MemoryUpstreamCache,
+  UpstreamUnavailableError,
+} from "@stamppot/upstream";
 export type {
   FindOvStopInput,
   GetRailDisruptionsInput,
@@ -8,7 +14,6 @@ export type {
   GetTrainDeparturesInput,
   PlanTrainJourneyInput,
 } from "./contracts";
-// biome-ignore lint/performance/noBarrelFile: This package entrypoint defines the supported public transport API.
 export {
   findOvStopInputSchema,
   findOvStopOutputSchema,
@@ -23,7 +28,6 @@ export {
   StopDirectoryUnavailableError,
   UnknownStationError,
   UnknownStopError,
-  UpstreamUnavailableError,
 } from "./contracts";
 export { NsClient } from "./ns-client";
 export type {
@@ -42,8 +46,6 @@ export {
   OVAPI_BASE_URL,
   STOPS_MANIFEST_KEY,
 } from "./stops-format";
-export type { UpstreamCache, UpstreamFetch } from "./upstream";
-export { MemoryUpstreamCache } from "./upstream";
 
 export function createOvMcp(dependencies: OvMcpDependencies): McpDefinition {
   return defineMcp({

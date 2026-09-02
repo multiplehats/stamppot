@@ -5,7 +5,7 @@ Stamppot is a collection of small, dependable MCP servers for Dutch data. Contri
 ## Workspace naming
 
 - Use `packages/mcp-<domain>` for an independently connectable MCP, such as `mcp-transit` or `mcp-groceries`.
-- Use an unprefixed noun for shared modules, such as `core`, `mcp-adapter`, or `testkit`.
+- Use an unprefixed noun for shared modules, such as `core`, `mcp-adapter`, `upstream`, or `testkit`.
 - Keep source-specific adapters inside their owning MCP until at least two MCPs genuinely share them.
 
 ## Adding an MCP

@@ -36,7 +36,7 @@ That plain-HTTP subrequest works from the Cloudflare edge, not only from local w
 
 ## Outbound fetch policy
 
-This is the repository's first MCP that reaches an upstream from a tool handler, so the policy is fixed here rather than per client:
+This is the repository's first MCP that reaches an upstream from a tool handler, so the policy is fixed here rather than per client. It now lives in `@stamppot/upstream`, so other MCPs that reach an upstream share this exact fetch policy instead of re-implementing it:
 
 - **GET only.** No upstream write path exists.
 - **Bounded.** `AbortSignal.any([context.signal, AbortSignal.timeout(timeoutMs)])`, with 10 s for NS and 5 s for OVapi, and an 8 MiB response bound.

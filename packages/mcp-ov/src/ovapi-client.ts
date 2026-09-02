@@ -1,11 +1,23 @@
+import {
+  boundedList,
+  fetchUpstreamJson,
+  globalUpstreamFetch,
+  optionalField,
+  trimUpstreamText,
+  type UpstreamCache,
+  type UpstreamFetch,
+  UpstreamStatusError,
+  UpstreamUnavailableError,
+} from "@stamppot/upstream";
 import { z } from "zod";
 import {
+  DEPARTURES_CACHE_TTL_SECONDS,
   type GetStopDeparturesInput,
   MAX_UPSTREAM_TEXT_CHARACTERS,
+  OVAPI_TIMEOUT_MS,
   type StopDeparture,
   stopDepartureSchema,
   UnknownStopError,
-  UpstreamUnavailableError,
 } from "./contracts";
 import type {
   OvCallContext,
@@ -13,21 +25,10 @@ import type {
   StopDeparturesService,
 } from "./operations";
 import { OVAPI_BASE_URL } from "./stops-format";
-import {
-  boundedList,
-  DEPARTURES_CACHE_TTL_SECONDS,
-  fetchUpstreamJson,
-  globalUpstreamFetch,
-  normalizeLocalWallClock,
-  OVAPI_TIMEOUT_MS,
-  optionalField,
-  trimUpstreamText,
-  type UpstreamCache,
-  type UpstreamFetch,
-  UpstreamStatusError,
-} from "./upstream";
 
 const MAX_UPSTREAM_ITEMS = 500;
+const LOCAL_WALL_CLOCK_PATTERN =
+  /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)(?:\.\d+)?$/;
 /** Present-or-absent passthrough: every upstream field is read defensively. */
 const looseValue = z.unknown().optional();
 
@@ -75,6 +76,15 @@ export interface OvApiClientOptions {
 
 function text(value: unknown): string | undefined {
   return trimUpstreamText(value, MAX_UPSTREAM_TEXT_CHARACTERS);
+}
+
+/** Keeps an OVapi wall-clock time verbatim; it carries no offset by design. */
+function normalizeLocalWallClock(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const match = LOCAL_WALL_CLOCK_PATTERN.exec(value.trim());
+  return match?.[1];
 }
 
 function stopDeparture(
