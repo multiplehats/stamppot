@@ -100,7 +100,8 @@ function Hero({ origin }: { readonly origin: string }): ReactNode {
           width={96}
         />
         <h1 className="mt-8 max-w-3xl text-balance font-semibold text-4xl tracking-tight sm:text-6xl">
-          MCP-servers voor Nederlandse data. Geen account nodig.
+          Nederlandse MCP-servers voor je (persoonlijke) agents. Geen account
+          nodig.
         </h1>
         <p className="mt-6 max-w-xl text-balance text-lg text-muted">
           Gratis, open source en zonder authenticatie. Koppel alle servers via

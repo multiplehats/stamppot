@@ -20,7 +20,30 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm check
+      - name: Refuse plaintext in any committed .env file
+        # The pre-commit hook runs the same check, but it is bypassable with
+        # --no-verify and absent for web-UI commits, so enforce it here too.
+        run: pnpm exec dotenvx ext precommit
+
+      - name: Run checks
+        env:
+          DOTENV_PRIVATE_KEY_CI: ${{ secrets.DOTENV_PRIVATE_KEY_CI }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork || false }}
+        run: |
+          # check:ci decrypts apps/edge/.env.ci with dotenvx --strict. Only a fork pull
+          # request is allowed to skip that: forks cannot read repository secrets, and
+          # failing a contributor on a key they cannot have would be wrong. Anywhere
+          # else a missing key means the secret was deleted or renamed, which must fail
+          # rather than quietly downgrade to an unverified check.
+          if [ -n "$DOTENV_PRIVATE_KEY_CI" ]; then
+            pnpm run check:ci
+          elif [ "$IS_FORK" = "true" ]; then
+            echo "::warning::Fork pull request cannot read repository secrets; running checks without the decrypted .env.ci."
+            pnpm run check
+          else
+            echo "::error::DOTENV_PRIVATE_KEY_CI is not set on a non-fork run. The repository secret is missing or renamed."
+            exit 1
+          fi
 
   changeset:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'changeset-release/')
@@ -90,7 +113,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Deploy Worker to the Personal account
-        run: pnpm run deploy
+        # deploy:production decrypts apps/edge/.env.production, uploads the Worker
+        # runtime secrets it declares, then deploys. Only ever runs on push to main,
+        # where repository secrets are available.
+        run: pnpm run deploy:production
         env:
           CLOUDFLARE_ACCOUNT_ID: d61f96f2a058dbe3857d567eb1779c94
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}

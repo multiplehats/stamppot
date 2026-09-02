@@ -3,6 +3,12 @@ import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 import { createMcpContentPlugin } from "./build/mcp-content-plugin.ts";
 
+// Wrangler builds the Worker's `env` by reading .env files off disk, which here hold
+// ciphertext. Stop it: .dev.vars (written by scripts/write-dev-vars.mjs) supplies the
+// real values instead, and a name with nothing behind it should be absent rather than
+// silently bound to an "encrypted:..." string.
+process.env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV ??= "false";
+
 export default defineConfig(async () => ({
   plugins: [
     await createMcpContentPlugin(),
