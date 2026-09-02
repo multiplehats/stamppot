@@ -75,10 +75,14 @@ if (names.length === 0) {
   process.stdout.write(`Uploading Worker secret(s): ${names.join(", ")}.\n`);
   // Only the listed keys are sent. `secret bulk` creates and updates; it deletes
   // nothing, so secrets managed outside this file (NS_API_KEY) survive untouched.
-  run("wrangler", ["secret", "bulk", "--config", WRANGLER_CONFIG], {
-    input: JSON.stringify(secrets),
-    stdio: ["pipe", "inherit", "inherit"],
-  });
+  run(
+    "pnpm",
+    ["exec", "wrangler", "secret", "bulk", "--config", WRANGLER_CONFIG],
+    {
+      input: JSON.stringify(secrets),
+      stdio: ["pipe", "inherit", "inherit"],
+    }
+  );
 }
 
-run("wrangler", ["deploy", "--config", WRANGLER_CONFIG]);
+run("pnpm", ["exec", "wrangler", "deploy", "--config", WRANGLER_CONFIG]);
