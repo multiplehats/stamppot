@@ -25,6 +25,7 @@
       "vite/client"
     ]
   },
+  "exclude": ["apps/agent"],
   "include": [
     "apps/**/*.ts",
     "apps/**/*.tsx",

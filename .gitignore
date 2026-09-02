@@ -13,8 +13,15 @@ worker-configuration.d.ts
 !apps/edge/.env
 !apps/edge/.env.ci
 !apps/edge/.env.production
+!apps/agent/.env.example
 .env.keys
 .env.keys.*
 .env*.local
 .dev.vars
 .dev.vars.*
+
+# eve agent build output and local Vercel link state under apps/agent
+.eve/
+.vercel/
+.output/
+.nitro/

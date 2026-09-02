@@ -91,6 +91,7 @@ The HTTP adapter and MCP adapter invoke the same validated operation definitions
 ## Workspace
 
 ```text
+apps/agent/              eve agent and evals that consume the Marktplaats MCP
 apps/edge/               Cloudflare Worker, routing and landing page
 packages/core/           Operation definition and registry
 packages/http-adapter/   Plain JSON transport
