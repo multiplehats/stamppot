@@ -8,7 +8,9 @@
 import { readFileSync } from "node:fs";
 
 const NON_RUNTIME_PREFIX = /^(?:DOTENV_|VITE_)/;
-const DECLARATION = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/;
+// [\w.-]+ matches dotenv's own key syntax. A narrower pattern would silently skip a
+// name like MY-KEY, which then never reaches the Worker while the deploy reports success.
+const DECLARATION = /^\s*(?:export\s+)?([\w.-]+)\s*=/;
 
 export function runtimeKeys(file) {
   const keys = [];

@@ -28,6 +28,7 @@ function run(command, args, options = {}) {
       `${command} ${args.join(" ")} exited with ${result.status}`
     );
   }
+  return result;
 }
 
 function collectRuntimeSecrets() {
@@ -60,16 +61,28 @@ if (names.length === 0) {
   process.stdout.write(`No runtime secrets declared in ${ENV_FILE}.\n`);
 } else {
   process.stdout.write(`Uploading Worker secret(s): ${names.join(", ")}.\n`);
-  // Only the listed keys are sent. `secret bulk` creates and updates; it deletes
-  // nothing, so secrets managed outside this file (NS_API_KEY) survive untouched.
-  run(
+  // Only the listed keys are sent, as a merge patch: `secret bulk` creates and updates
+  // but deletes nothing, so a secret set straight on the Worker and absent here is left
+  // alone. Adding a name to the env file does mean this overwrites whatever the Worker
+  // currently holds for it.
+  const upload = run(
     "pnpm",
     ["exec", "wrangler", "secret", "bulk", "--config", WRANGLER_CONFIG],
     {
+      encoding: "utf8",
       input: JSON.stringify(secrets),
-      stdio: ["pipe", "inherit", "inherit"],
+      stdio: ["pipe", "pipe", "inherit"],
     }
   );
+  process.stdout.write(upload.stdout ?? "");
+  // `secret bulk` exits 0 when it reads nothing usable from stdin, which would let the
+  // deploy ship against stale secrets. Insist every name is named back to us.
+  const unconfirmed = names.filter((name) => !upload.stdout?.includes(name));
+  if (unconfirmed.length > 0) {
+    throw new Error(
+      `wrangler secret bulk did not confirm ${unconfirmed.join(", ")}. Refusing to deploy against secrets that may be stale.`
+    );
+  }
 }
 
 run("pnpm", ["exec", "wrangler", "deploy", "--config", WRANGLER_CONFIG]);

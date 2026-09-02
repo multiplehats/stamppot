@@ -6,8 +6,13 @@ worker-configuration.d.ts
 *.tsbuildinfo
 .DS_Store
 
-# dotenvx: the .env* files are committed encrypted (ciphertext only).
-# Never commit key material or plaintext overrides.
+# dotenvx: ignore every .env file by default, then allow exactly the three that are
+# committed as ciphertext. Un-ignoring by name rather than dropping the .env rule keeps
+# a stray plaintext .env anywhere else in the tree unstageable.
+.env*
+!apps/edge/.env
+!apps/edge/.env.ci
+!apps/edge/.env.production
 .env.keys
 .env.keys.*
 .env*.local
