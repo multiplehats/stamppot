@@ -123,6 +123,7 @@ function Hero({ origin }: { readonly origin: string }): ReactNode {
             serverName: "stamppot",
             theme: "light",
           })}
+          placement="landing"
         />
       </div>
     </section>

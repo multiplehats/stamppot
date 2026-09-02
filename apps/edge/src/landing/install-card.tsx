@@ -18,6 +18,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { trackInstallSnippetCopied } from "../analytics/client";
 import type { InstallOption } from "./install-targets";
 
 type SelectionValue = number | string;
@@ -31,6 +32,8 @@ interface InstallCardProps {
   readonly className?: string;
   readonly eyebrow: string;
   readonly options: readonly InstallOption[];
+  /** Which page the card sits on, so copies can be told apart. */
+  readonly placement: "landing" | "tool";
 }
 
 /**
@@ -43,6 +46,7 @@ export function InstallCard({
   className = "",
   eyebrow,
   options,
+  placement,
 }: InstallCardProps): ReactNode {
   const [first] = options;
   const [selectedId, setSelectedId] = useState(first?.id ?? null);
@@ -86,6 +90,8 @@ export function InstallCard({
     } catch {
       return;
     }
+    // Only a copy that actually happened counts.
+    trackInstallSnippetCopied(selected.id, placement);
     setCopied(true);
 
     if (copyResetRef.current !== undefined) {
@@ -94,7 +100,7 @@ export function InstallCard({
     copyResetRef.current = window.setTimeout(() => {
       setCopied(false);
     }, COPY_RESET_MS);
-  }, [selected]);
+  }, [selected, placement]);
 
   if (selected === undefined) {
     return null;

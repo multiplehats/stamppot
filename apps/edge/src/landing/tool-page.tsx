@@ -197,6 +197,7 @@ function Documentation({
               serverName: tool.mcpId,
               theme: "light",
             })}
+            placement="tool"
           />
           <HttpCard origin={origin} tool={tool} />
         </aside>

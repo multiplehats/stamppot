@@ -11,6 +11,8 @@ catalog:
   "@heroui/react": 3.2.4
   "@heroui/styles": 3.2.4
   "@modelcontextprotocol/server": 2.0.0
+  "@openpanel/sdk": 1.3.1
+  "@openpanel/web": 1.4.1
   "@parsew/sdk": 0.12.0
   "@tailwindcss/vite": 4.3.3
   "@types/node": 24.13.3
@@ -29,6 +31,7 @@ catalog:
   react-dom: 19.2.8
   rsc-html-stream: 0.0.8
   tailwindcss: 4.3.3
+  trakoo: 1.0.0
   tsx: 4.23.12
   typescript: 6.0.3
   typescript-eslint: 8.68.0

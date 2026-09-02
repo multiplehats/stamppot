@@ -13,9 +13,19 @@ export default defineConfig(async () => ({
   plugins: [
     await createMcpContentPlugin(),
     cloudflareTest(() => ({
-      // The NS key is a Worker secret, so it is absent from the Wrangler
-      // configuration. Tests supply a fixed value and never reach NS.
-      miniflare: { bindings: { NS_API_KEY: "test-ns-key" } },
+      // These are Worker secrets, so they are absent from the Wrangler
+      // configuration and would otherwise come from a contributor's decrypted
+      // .dev.vars. The NS key gets a fixed value and tests never reach NS; the
+      // OpenPanel keys are blanked so that a test run can never write to a
+      // real analytics project, whatever client ids happen to be in the
+      // environment (notably under `pnpm check:ci`).
+      miniflare: {
+        bindings: {
+          NS_API_KEY: "test-ns-key",
+          OPENPANEL_API_KEY: "",
+          OPENPANEL_BACKEND_API_KEY: "",
+        },
+      },
       wrangler: { configPath: "./apps/edge/wrangler.jsonc" },
     })),
   ],
