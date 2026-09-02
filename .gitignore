@@ -13,6 +13,9 @@ worker-configuration.d.ts
 !apps/edge/.env
 !apps/edge/.env.ci
 !apps/edge/.env.production
+!apps/agent/.env
+!apps/agent/.env.ci
+!apps/agent/.env.production
 !apps/agent/.env.example
 .env.keys
 .env.keys.*

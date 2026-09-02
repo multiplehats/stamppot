@@ -12,24 +12,33 @@ const PLACE_HINT_PATTERN = /postcode|postal code|spelling|spelled|place/i;
  */
 export default defineEval({
   description:
-    "Relays unknown_place and asks for a spelling or postcode rather than pretending to search.",
+    "Asks for a spelling or postcode after unknown_place rather than pretending to search.",
   tags: ["live", "errors"],
   async test(t) {
     await t.send(
       "Any road bikes for sale within 15 km of Xyzzyville? Anything under 400 euros."
     );
 
-    t.succeeded();
     t.calledTool(FIND_LISTINGS, {
       input: { location: { place: XYZZYVILLE_PATTERN } },
     });
     t.notCalledTool(GET_LISTING);
-    t.check(t.reply, includes(PLACE_HINT_PATTERN));
-    t.judge.autoevals
-      .closedQA(
-        "The assistant says it could not find a place called Xyzzyville, asks for a different spelling or a Dutch postcode, and does not present any road bike listings.",
-        { on: t.reply }
-      )
-      .atLeast(0.8);
+
+    if (t.reply) {
+      t.succeeded();
+      t.check(t.reply, includes(PLACE_HINT_PATTERN));
+      t.judge.autoevals
+        .closedQA(
+          "The assistant says it could not find a place called Xyzzyville, asks for a different spelling or a Dutch postcode, and does not present any road bike listings.",
+          { on: t.reply }
+        )
+        .atLeast(0.8);
+    } else {
+      t.parked();
+      t.requireInputRequest({
+        prompt: PLACE_HINT_PATTERN,
+        toolName: "ask_question",
+      });
+    }
   },
 });

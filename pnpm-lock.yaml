@@ -232,6 +232,9 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
+      '@dotenvx/dotenvx':
+        specifier: 'catalog:'
+        version: 2.23.0
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3

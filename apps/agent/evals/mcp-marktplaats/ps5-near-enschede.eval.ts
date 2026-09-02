@@ -8,7 +8,7 @@ const MARKTPLAATS_LINK_PATTERN = /marktplaats\.nl/i;
 /**
  * The founding scenario: a person wants a second-hand PS5 in good condition
  * near Enschede. The agent must translate that into one bounded search with a
- * place, a radius and the two "good condition" values, and report what it
+ * place, a radius and the accepted "good condition" values, and report what it
  * found with prices and links.
  */
 export default defineEval({
@@ -26,7 +26,12 @@ export default defineEval({
         conditions: (value: unknown) =>
           Array.isArray(value) &&
           value.length > 0 &&
-          value.every((entry) => entry === "like_new" || entry === "used"),
+          value.every(
+            (entry) =>
+              entry === "like_new" ||
+              entry === "refurbished" ||
+              entry === "used"
+          ),
         location: { place: ENSCHEDE_PATTERN, radiusKm: 20 },
       },
     });

@@ -6,5 +6,5 @@ import { defineAgent } from "eve";
  * package holds a credential.
  */
 export default defineAgent({
-  model: "anthropic/claude-sonnet-5",
+  model: "deepseek/deepseek-v4-flash-vision-exp",
 });

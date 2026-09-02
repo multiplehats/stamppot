@@ -9,10 +9,10 @@
   },
   "scripts": {
     "build": "eve build",
-    "deploy": "eve deploy",
-    "dev": "eve dev",
-    "eval": "eve eval",
-    "start": "eve start",
+    "deploy": "dotenvx run --strict --overload -f .env.production -- eve deploy",
+    "dev": "dotenvx run --strict --overload -f .env -- eve dev",
+    "eval": "dotenvx run --strict --overload -f .env.ci -- eve eval",
+    "start": "dotenvx run --strict --overload -f .env.production -- eve start",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
@@ -22,6 +22,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }
