@@ -1,9 +1,15 @@
 node_modules/
 dist/
 .wrangler/
-.dev.vars
-.env
 coverage/
 worker-configuration.d.ts
 *.tsbuildinfo
 .DS_Store
+
+# dotenvx: the .env* files are committed encrypted (ciphertext only).
+# Never commit key material or plaintext overrides.
+.env.keys
+.env.keys.*
+.env*.local
+.dev.vars
+.dev.vars.*

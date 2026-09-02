@@ -1,3 +1,8 @@
+# dotenvx: refuse to commit any .env file that still holds plaintext secrets.
+# Installed here rather than via `dotenvx ext precommit --install` because husky
+# owns core.hooksPath, which makes .git/hooks/pre-commit dead.
+pnpm exec dotenvx ext precommit
+
 # ultracite
 #!/bin/sh
 pnpm dlx lint-staged

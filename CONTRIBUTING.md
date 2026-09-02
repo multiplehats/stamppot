@@ -36,4 +36,17 @@ pnpm changeset
 
 Every pull request must add a changeset. Select each affected package and its semantic version bump. Use `pnpm changeset --empty` when the pull request changes only documentation, tests, CI, or other non-release files.
 
+## Environment files
+
+Secrets live in `apps/edge/.env*`, encrypted with [dotenvx](https://dotenvx.com/encryption) and committed that way: each file carries a plaintext `DOTENV_PUBLIC_KEY*` that anyone can encrypt with, while the matching private key stays out of the repository. Ciphertext in a public repository is the intended design, so commit these files rather than gitignoring them.
+
+- `.env` is local development, `.env.ci` is the CI check run, `.env.production` is the deployed Worker.
+- Add or change a value with `dotenvx set KEY value -f apps/edge/.env.production`, never by hand.
+- Read one back with `dotenvx get KEY -f apps/edge/.env.production`, and run any command against a file with `dotenvx run -f apps/edge/.env.ci -- <command>`.
+- A pre-commit hook (`dotenvx ext precommit`) refuses any staged `.env` file that still holds plaintext.
+
+Decrypting requires the private key. Maintainers hold it through dotenvx Armor; CI reads `DOTENV_PRIVATE_KEY_CI` and `DOTENV_PRIVATE_KEY_PRODUCTION` from repository secrets. Pull requests from forks cannot read those secrets, so CI falls back to running `pnpm check` without the decrypted values. Contributors do not need a key.
+
+`pnpm run deploy:production` decrypts `.env.production`, uploads every non-`VITE_` value it declares as a Worker secret, then deploys. `VITE_` values are build-time only and are inlined by Vite instead. Secrets managed outside that file, such as `NS_API_KEY`, are never touched: the upload creates and updates, and deletes nothing.
+
 After changes land on `main`, automation updates a release pull request that applies the pending versions and changelogs. Merging any pull request into `main` also validates and redeploys the Cloudflare Worker.

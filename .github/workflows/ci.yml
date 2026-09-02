@@ -20,7 +20,19 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm check
+      - name: Run checks
+        env:
+          DOTENV_PRIVATE_KEY_CI: ${{ secrets.DOTENV_PRIVATE_KEY_CI }}
+        run: |
+          # check:ci decrypts apps/edge/.env.ci with dotenvx --strict. Pull requests
+          # from forks cannot read repository secrets, so fall back to the plain check
+          # rather than failing a contributor's build on a key they cannot have.
+          if [ -n "$DOTENV_PRIVATE_KEY_CI" ]; then
+            pnpm run check:ci
+          else
+            echo "::warning::DOTENV_PRIVATE_KEY_CI is unavailable (expected on fork pull requests); running checks without the decrypted .env.ci."
+            pnpm run check
+          fi
 
   changeset:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'changeset-release/')
@@ -90,7 +102,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Deploy Worker to the Personal account
-        run: pnpm run deploy
+        # deploy:production decrypts apps/edge/.env.production, uploads the Worker
+        # runtime secrets it declares, then deploys. Only ever runs on push to main,
+        # where repository secrets are available.
+        run: pnpm run deploy:production
         env:
           CLOUDFLARE_ACCOUNT_ID: d61f96f2a058dbe3857d567eb1779c94
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
