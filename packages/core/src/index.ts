@@ -162,11 +162,27 @@ export type ToolCallReporter = (
 ) => void;
 
 /**
+ * The caller's arguments failed the operation's input schema, so the operation
+ * never ran. Only this class means `invalid_input`: a `ZodError` on its own
+ * does not, because operations also use Zod on upstream responses and on
+ * their own output, and those failures are the server's, not the caller's.
+ */
+export class OperationInputError extends Error {
+  override readonly cause: z.ZodError;
+
+  constructor(cause: z.ZodError) {
+    super("Operation input failed validation");
+    this.name = "OperationInputError";
+    this.cause = cause;
+  }
+}
+
+/**
  * Classify a failed invocation without reading its message. Upstream errors
  * echo their input, so a message is never safe to forward to analytics.
  */
 export function classifyOperationError(error: unknown): ToolCallOutcome {
-  return error instanceof z.ZodError ? "invalid_input" : "error";
+  return error instanceof OperationInputError ? "invalid_input" : "error";
 }
 
 export interface OperationDescription {
@@ -230,8 +246,11 @@ export function defineOperation<
     description: definition.description,
     inputSchema: definition.input,
     async invoke(context, input) {
-      const parsedInput = definition.input.parse(input);
-      const result = await definition.execute(context, parsedInput);
+      const parsedInput = definition.input.safeParse(input);
+      if (!parsedInput.success) {
+        throw new OperationInputError(parsedInput.error);
+      }
+      const result = await definition.execute(context, parsedInput.data);
       return definition.output.parse(result);
     },
     name: definition.name,

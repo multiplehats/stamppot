@@ -1,6 +1,7 @@
 import {
   classifyOperationError,
   clientIdentityFromUserAgent,
+  OperationInputError,
   type OperationRegistry,
   type ToolCallOutcome,
   type ToolCallReporter,
@@ -199,8 +200,8 @@ export async function handleHttpToolsRequest(
         400
       );
     }
-    if (error instanceof z.ZodError) {
-      return errorResponse("invalid_input", z.prettifyError(error), 400);
+    if (error instanceof OperationInputError) {
+      return errorResponse("invalid_input", z.prettifyError(error.cause), 400);
     }
 
     console.error(

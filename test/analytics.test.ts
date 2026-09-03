@@ -45,10 +45,24 @@ const explode = defineOperation({
   title: "Explode",
 });
 
+// Stands in for a client parsing an upstream response: a ZodError raised
+// after the caller's input was accepted. That is the server's failure.
+const misparse = defineOperation({
+  description: "Fail while parsing an upstream response.",
+  execute(_context, _input) {
+    z.object({ items: z.array(z.string()) }).parse({ items: "not a list" });
+    return { value: "unreachable" };
+  },
+  input: z.object({ listKey: z.string() }).strict(),
+  name: "misparse",
+  output: z.object({ value: z.string() }).strict(),
+  title: "Misparse",
+});
+
 const testMcp = defineMcp({
   description: "Analytics reporting test operations.",
   id: "analytics-test",
-  operations: [echo, explode],
+  operations: [echo, explode, misparse],
   title: "Analytics test",
 });
 
@@ -235,6 +249,20 @@ describe("tool call records", () => {
 
     expect(record?.outcome).toBe("invalid_input");
     expect(Object.keys(record as object).sort()).toEqual(RECORD_KEYS);
+  });
+
+  it("reports a ZodError raised after the input was accepted as an error", async () => {
+    // The caller did nothing wrong here, so neither transport may blame them.
+    const [mcpRecord] = await callOverMcp("misparse", {
+      listKey: SECRET_ARGUMENT,
+    });
+    const [httpRecord] = await callOverHttp(
+      "misparse",
+      JSON.stringify({ listKey: SECRET_ARGUMENT })
+    );
+
+    expect(mcpRecord?.outcome).toBe("error");
+    expect(httpRecord?.outcome).toBe("error");
   });
 
   it("reports malformed JSON as invalid_input", async () => {

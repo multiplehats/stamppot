@@ -41,7 +41,10 @@ Two further rules follow from the same constraint:
 
 - **No error messages.** `classifyOperationError` maps a failure to
   `invalid_input` or `error` by class alone. An upstream message can echo the
-  input that caused it, so it is never read.
+  input that caused it, so it is never read. Only `OperationInputError`, which
+  `invoke` throws before the operation runs, counts as `invalid_input`; a bare
+  `ZodError` does not, because operations also parse upstream responses and
+  their own output with Zod, and those failures are not the caller's.
 - **No context and no identity.** trakoo's OpenPanel provider spreads
   `context.page`, `context.device`, `context.utm` and `context.user` into the
   payload when given them. MCP events are tracked with no context, no `userId`

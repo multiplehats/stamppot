@@ -54,6 +54,8 @@ const groceriesMcpHandler = createRegistryMcpHandler(registry, {
 
 const marktplaatsMcpHandler = createRegistryMcpHandler(registry, {
   mcp: marktplaatsMcp,
+  onDiscovery: analytics.reportDiscovery,
+  onToolCall: analytics.reportToolCall,
   route: "/mcp/marktplaats",
   serverName: "stamppot-marktplaats",
   serverVersion: SERVER_VERSION,
