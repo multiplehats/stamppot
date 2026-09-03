@@ -104,4 +104,4 @@ Each successful sync retains the prior immutable catalog version and only advanc
 - The write limiter is an abuse brake, not authorization or exact accounting. Cloudflare applies its counters per location and updates them approximately.
 - Keep the R2 bucket private and keep the `GROCERIES_CATALOG`, `SHOPPING_LISTS`, and `SHOPPING_LIST_WRITES` binding names unchanged unless the Worker code is updated at the same time.
 
-See [Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) for namespace semantics and [`docs/decisions/groceries.md`](../decisions/groceries.md) for the storage, retention, and capability model.
+See [Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) for namespace semantics.

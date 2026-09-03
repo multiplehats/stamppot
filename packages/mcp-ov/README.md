@@ -18,4 +18,4 @@ Tijden van NS zijn ISO 8601 met offset. OVapi levert lokale kloktijden zónder o
 
 Alle tools zijn alleen-lezen en slaan niets op. Antwoorden zijn kortstondig gecachte momentopnames en zijn geen reservering, prijsopgave of vervoerbewijs. Onbereikbare bronnen, onbekende codes en een overschreden rate limit komen als expliciete statussen terug, niet als fout.
 
-Gebruik het domein-endpoint op `/mcp/ov`. Zie het [runbook voor zelfhosting](../../docs/runbooks/ov-self-hosting.md) voor het registreren van een NS-sleutel, het aanmaken van de bucket en het publiceren van de haltemomentopname, en [`docs/decisions/ov.md`](../../docs/decisions/ov.md) voor het bron-, sleutel- en momentopnamemodel.
+Gebruik het domein-endpoint op `/mcp/ov`. Zie het [runbook voor zelfhosting](../../docs/runbooks/ov-self-hosting.md) voor het registreren van een NS-sleutel, het aanmaken van de bucket en het publiceren van de haltemomentopname.

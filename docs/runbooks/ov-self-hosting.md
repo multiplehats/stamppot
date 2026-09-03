@@ -151,7 +151,7 @@ The repository installs no scheduled trigger, so this runs from an operator's ow
 
 Cloudflare documents functional Cache API operations for [Workers deployed to custom domains](https://developers.cloudflare.com/workers/runtime-apis/cache/), and no impact at all in the dashboard editor and Playground. Treat the caching half of that budget protection as guaranteed only behind a custom domain: if you verify or run on the `workers.dev` URL, assume every train call reaches NS and that the per-IP limiter is the only thing standing between an authless endpoint and the daily quota. Deploy behind a custom domain before pointing real traffic at it.
 
-**OVapi.** `v0.ovapi.nl` is an unofficial community source with no published licence, no support and no availability guarantee, intended for non-commercial use. Keep request volume modest and do not build a commercial dependency on it. Its HTTPS endpoint presents a certificate for unrelated hostnames, so Stamppot fetches it over plain HTTP and its responses are not protected against on-path modification — see [`docs/decisions/ov.md`](../decisions/ov.md). Every OVapi result is labelled `official: false` in the tool output for that reason.
+**OVapi.** `v0.ovapi.nl` is an unofficial community source with no published licence, no support and no availability guarantee, intended for non-commercial use. Keep request volume modest and do not build a commercial dependency on it. Its HTTPS endpoint presents a certificate for unrelated hostnames, so Stamppot fetches it over plain HTTP and its responses are not protected against on-path modification. Every OVapi result is labelled `official: false` in the tool output for that reason.
 
 ## Operational notes
 
@@ -161,4 +161,4 @@ Cloudflare documents functional Cache API operations for [Workers deployed to cu
 - Keep the R2 bucket private and keep the `OV_STOPS` and `OV_UPSTREAM_READS` binding names unchanged unless the Worker code is updated at the same time.
 - No public transport tool writes anything. There is no stored state, no user identity and no capability to lose.
 
-See [Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) for namespace semantics and [`docs/decisions/ov.md`](../decisions/ov.md) for the upstream, secret, and snapshot model.
+See [Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) for namespace semantics.
