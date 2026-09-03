@@ -1,5 +1,9 @@
 import { env as bindings } from "cloudflare:workers";
-import { OperationRegistry } from "@stamppot/core";
+import {
+  clientIdentityFromUserAgent,
+  OperationRegistry,
+  UNKNOWN_CLIENT,
+} from "@stamppot/core";
 import { handleHttpToolsRequest } from "@stamppot/http-adapter";
 import { createRegistryMcpHandler } from "@stamppot/mcp-adapter";
 import { createGroceriesMcp } from "@stamppot/mcp-groceries";
@@ -8,6 +12,7 @@ import { createMarktplaatsMcp } from "@stamppot/mcp-marktplaats";
 import { createCloudflareMarktplaatsDependencies } from "@stamppot/mcp-marktplaats/cloudflare";
 import { createOvMcp } from "@stamppot/mcp-ov";
 import { createCloudflareOvDependencies } from "@stamppot/mcp-ov/cloudflare";
+import { createEdgeAnalytics } from "./analytics/server";
 import { toolContent } from "./landing/content";
 import {
   renderMarkdown,
@@ -28,8 +33,11 @@ const marktplaatsMcp = createMarktplaatsMcp(
 const ovMcp = createOvMcp(createCloudflareOvDependencies(() => bindings));
 const registry = new OperationRegistry([groceriesMcp, marktplaatsMcp, ovMcp]);
 const toolCatalog = toolContent(registry);
+const analytics = createEdgeAnalytics(() => bindings);
 
 const combinedMcpHandler = createRegistryMcpHandler(registry, {
+  onDiscovery: analytics.reportDiscovery,
+  onToolCall: analytics.reportToolCall,
   route: "/mcp",
   serverName: "stamppot",
   serverVersion: SERVER_VERSION,
@@ -37,6 +45,8 @@ const combinedMcpHandler = createRegistryMcpHandler(registry, {
 
 const groceriesMcpHandler = createRegistryMcpHandler(registry, {
   mcp: groceriesMcp,
+  onDiscovery: analytics.reportDiscovery,
+  onToolCall: analytics.reportToolCall,
   route: "/mcp/groceries",
   serverName: "stamppot-groceries",
   serverVersion: SERVER_VERSION,
@@ -44,6 +54,8 @@ const groceriesMcpHandler = createRegistryMcpHandler(registry, {
 
 const marktplaatsMcpHandler = createRegistryMcpHandler(registry, {
   mcp: marktplaatsMcp,
+  onDiscovery: analytics.reportDiscovery,
+  onToolCall: analytics.reportToolCall,
   route: "/mcp/marktplaats",
   serverName: "stamppot-marktplaats",
   serverVersion: SERVER_VERSION,
@@ -51,10 +63,19 @@ const marktplaatsMcpHandler = createRegistryMcpHandler(registry, {
 
 const ovMcpHandler = createRegistryMcpHandler(registry, {
   mcp: ovMcp,
+  onDiscovery: analytics.reportDiscovery,
+  onToolCall: analytics.reportToolCall,
   route: "/mcp/ov",
   serverName: "stamppot-ov",
   serverVersion: SERVER_VERSION,
 });
+
+const MCP_HANDLERS: ReadonlyMap<string, typeof combinedMcpHandler> = new Map([
+  ["/mcp", combinedMcpHandler],
+  ["/mcp/groceries", groceriesMcpHandler],
+  ["/mcp/marktplaats", marktplaatsMcpHandler],
+  ["/mcp/ov", ovMcpHandler],
+]);
 
 // biome-ignore lint/performance/noBarrelFile: Wrangler discovers Durable Object classes from the Worker entrypoint.
 export { ShoppingListObject } from "@stamppot/mcp-groceries/cloudflare";
@@ -97,7 +118,8 @@ function page(response: Response): Response {
 async function handleToolPageRequest(
   request: Request,
   url: URL,
-  routeUrl: URL
+  routeUrl: URL,
+  ctx: ExecutionContext
 ): Promise<Response | undefined> {
   if (request.method !== "GET") {
     return undefined;
@@ -113,9 +135,31 @@ async function handleToolPageRequest(
   const wantsMarkdown =
     url.pathname === routeUrl.pathname &&
     (request.headers.get("accept")?.includes("text/markdown") ?? false);
-  return wantsMarkdown
-    ? text(renderToolMarkdown(url.origin, toolCatalog, tool), "text/markdown")
-    : page(await renderToolPage(request, url.origin, toolCatalog, tool));
+  if (wantsMarkdown) {
+    analytics.reportAgentPageView(
+      routeUrl.pathname,
+      "markdown",
+      callerOf(request),
+      ctx
+    );
+    return text(
+      renderToolMarkdown(url.origin, toolCatalog, tool),
+      "text/markdown"
+    );
+  }
+  // The HTML page reports itself from the browser, after hydration.
+  return page(await renderToolPage(request, url.origin, toolCatalog, tool));
+}
+
+/** The JSON catalog: read by clients, never by the browser bundle. */
+const CATALOG_PATHS = new Set(["/v1/mcps", "/v1/tools"]);
+
+/** These surfaces have no MCP handshake, so the User-Agent is the only signal. */
+function callerOf(request: Request) {
+  return (
+    clientIdentityFromUserAgent(request.headers.get("user-agent")) ??
+    UNKNOWN_CLIENT
+  );
 }
 
 export default {
@@ -123,19 +167,9 @@ export default {
     const url = new URL(request.url);
     const routeUrl = pageUrl(url);
 
-    if (url.pathname === "/mcp") {
-      return withSecurityHeaders(await combinedMcpHandler(request, env, ctx));
-    }
-    if (url.pathname === "/mcp/groceries") {
-      return withSecurityHeaders(await groceriesMcpHandler(request, env, ctx));
-    }
-    if (url.pathname === "/mcp/marktplaats") {
-      return withSecurityHeaders(
-        await marktplaatsMcpHandler(request, env, ctx)
-      );
-    }
-    if (url.pathname === "/mcp/ov") {
-      return withSecurityHeaders(await ovMcpHandler(request, env, ctx));
+    const mcpHandler = MCP_HANDLERS.get(url.pathname);
+    if (mcpHandler !== undefined) {
+      return withSecurityHeaders(await mcpHandler(request, env, ctx));
     }
 
     if (request.method === "OPTIONS" && url.pathname.startsWith("/v1/")) {
@@ -151,8 +185,19 @@ export default {
       );
     }
 
-    const toolsResponse = await handleHttpToolsRequest(request, registry);
+    const toolsResponse = await handleHttpToolsRequest(request, registry, {
+      context: ctx,
+      onToolCall: analytics.reportToolCall,
+    });
     if (toolsResponse !== undefined) {
+      if (request.method === "GET" && CATALOG_PATHS.has(url.pathname)) {
+        analytics.reportAgentPageView(
+          url.pathname,
+          "catalog",
+          callerOf(request),
+          ctx
+        );
+      }
       const headers = new Headers(toolsResponse.headers);
       headers.set("access-control-allow-origin", "*");
       return withSecurityHeaders(
@@ -180,7 +225,8 @@ export default {
     const toolPageResponse = await handleToolPageRequest(
       request,
       url,
-      routeUrl
+      routeUrl,
+      ctx
     );
     if (toolPageResponse !== undefined) {
       return toolPageResponse;
@@ -191,9 +237,18 @@ export default {
       const wantsMarkdown =
         url.pathname === routeUrl.pathname &&
         (request.headers.get("accept")?.includes("text/markdown") ?? false);
-      return wantsMarkdown
-        ? text(renderMarkdown(origin, registry), "text/markdown")
-        : page(await renderLandingPage(request, origin, registry, toolCatalog));
+      if (wantsMarkdown) {
+        analytics.reportAgentPageView(
+          routeUrl.pathname,
+          "markdown",
+          callerOf(request),
+          ctx
+        );
+        return text(renderMarkdown(origin, registry), "text/markdown");
+      }
+      return page(
+        await renderLandingPage(request, origin, registry, toolCatalog)
+      );
     }
 
     return withSecurityHeaders(

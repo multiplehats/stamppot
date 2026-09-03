@@ -6,6 +6,8 @@
   "dependencies": {
     "@heroui/react": "catalog:",
     "@heroui/styles": "catalog:",
+    "@openpanel/sdk": "catalog:",
+    "@openpanel/web": "catalog:",
     "@parsew/sdk": "catalog:",
     "@stamppot/core": "workspace:*",
     "@stamppot/http-adapter": "workspace:*",
@@ -16,7 +18,8 @@
     "@stamppot/upstream": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "rsc-html-stream": "catalog:"
+    "rsc-html-stream": "catalog:",
+    "trakoo": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

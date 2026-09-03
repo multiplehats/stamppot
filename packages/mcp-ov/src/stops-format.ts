@@ -10,7 +10,7 @@ export const STOPS_MANIFEST_KEY = "stops/manifest.json";
 /**
  * Only the `v0` virtual host serves this data, and its TLS certificate is
  * issued for unrelated names, so the plain-HTTP origin is the only reachable
- * one. See `docs/decisions/ov.md`.
+ * one. See `docs/runbooks/ov-self-hosting.md`.
  */
 export const OVAPI_BASE_URL = "http://v0.ovapi.nl";
 export const OVAPI_STOP_AREAS_URL = `${OVAPI_BASE_URL}/stopareacode`;

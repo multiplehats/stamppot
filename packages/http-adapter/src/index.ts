@@ -1,5 +1,21 @@
-import { type OperationRegistry, UnknownOperationError } from "@stamppot/core";
+import {
+  classifyOperationError,
+  clientIdentityFromUserAgent,
+  OperationInputError,
+  type OperationRegistry,
+  type ToolCallOutcome,
+  type ToolCallReporter,
+  UNKNOWN_CLIENT,
+  UnknownOperationError,
+} from "@stamppot/core";
 import { z } from "zod";
+
+export interface HttpToolsOptions {
+  /** The request's context, handed to `onToolCall` for `waitUntil`. */
+  readonly context: ExecutionContext;
+  /** Reports each settled tool call. Never receives tool arguments. */
+  readonly onToolCall: ToolCallReporter;
+}
 
 const DEFAULT_MAX_BODY_BYTES = 64 * 1024;
 const TOOL_ROUTE_PATTERN = /^\/v1\/tools\/([a-z][a-z0-9_]*)$/;
@@ -80,9 +96,22 @@ function errorResponse(
   return json({ error: { code, message } } satisfies ErrorPayload, { status });
 }
 
+/**
+ * Errors raised before the operation runs still describe a real attempt at a
+ * real tool, so they are reported rather than dropped. The message is never
+ * read: only the class, which cannot echo the caller's input.
+ */
+function classifyHttpToolError(error: unknown): ToolCallOutcome {
+  if (error instanceof BodyTooLargeError || error instanceof SyntaxError) {
+    return "invalid_input";
+  }
+  return classifyOperationError(error);
+}
+
 export async function handleHttpToolsRequest(
   request: Request,
-  registry: OperationRegistry
+  registry: OperationRegistry,
+  options?: HttpToolsOptions
 ): Promise<Response | undefined> {
   const url = new URL(request.url);
 
@@ -114,6 +143,35 @@ export async function handleHttpToolsRequest(
     return errorResponse("not_found", "Tool not found", 404);
   }
 
+  // An unrecognised name is a 404, not a tool call. Reporting it would let a
+  // caller write arbitrary names into the analytics event stream.
+  const isKnownOperation = registry.getOperation(operationName) !== undefined;
+  const startedAt = Date.now();
+  // No MCP handshake on this route, so the User-Agent is all a caller offers.
+  const identity =
+    clientIdentityFromUserAgent(request.headers.get("user-agent")) ??
+    UNKNOWN_CLIENT;
+  const report = (outcome: ToolCallOutcome): void => {
+    if (options === undefined || !isKnownOperation) {
+      return;
+    }
+    try {
+      options.onToolCall(
+        {
+          ...identity,
+          durationMs: Date.now() - startedAt,
+          mcp: registry.mcpIdFor(operationName),
+          outcome,
+          tool: operationName,
+          transport: "http",
+        },
+        options.context
+      );
+    } catch {
+      // Measurement must never change the answer.
+    }
+  };
+
   try {
     const input = await readJsonBody(request);
     const result = await registry.invoke(
@@ -125,8 +183,10 @@ export async function handleHttpToolsRequest(
       },
       input
     );
+    report("success");
     return json(result);
   } catch (error) {
+    report(classifyHttpToolError(error));
     if (error instanceof UnknownOperationError) {
       return errorResponse("not_found", "Tool not found", 404);
     }
@@ -140,8 +200,8 @@ export async function handleHttpToolsRequest(
         400
       );
     }
-    if (error instanceof z.ZodError) {
-      return errorResponse("invalid_input", z.prettifyError(error), 400);
+    if (error instanceof OperationInputError) {
+      return errorResponse("invalid_input", z.prettifyError(error.cause), 400);
     }
 
     console.error(
