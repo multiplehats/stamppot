@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ToolContentCatalog, ToolPageContent } from "./content";
 import { LandingPage } from "./landing-page";
+import type { StaticPage } from "./pages";
+import { NotFoundPage, StaticPageView } from "./static-page";
 import { ToolPage } from "./tool-page";
 
 const HTML_DOCTYPE = "<!doctype html>";
@@ -10,11 +12,10 @@ const HTML_DOCTYPE = "<!doctype html>";
 export function renderLandingPage(
   _request: Request,
   origin: string,
-  registry: OperationRegistry,
-  content: ToolContentCatalog
+  registry: OperationRegistry
 ): Promise<Response> {
   return Promise.resolve(
-    html(<LandingPage content={content} origin={origin} registry={registry} />)
+    html(<LandingPage origin={origin} registry={registry} />)
   );
 }
 
@@ -27,6 +28,21 @@ export function renderToolPage(
   return Promise.resolve(
     html(<ToolPage content={content} origin={origin} tool={tool} />)
   );
+}
+
+export function renderStaticPage(
+  _request: Request,
+  origin: string,
+  page: StaticPage
+): Promise<Response> {
+  return Promise.resolve(html(<StaticPageView origin={origin} page={page} />));
+}
+
+export function renderNotFoundPage(
+  _request: Request,
+  path: string
+): Promise<Response> {
+  return Promise.resolve(html(<NotFoundPage path={path} />));
 }
 
 function html(root: ReactNode): Response {

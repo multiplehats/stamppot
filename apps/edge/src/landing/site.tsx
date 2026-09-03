@@ -1,8 +1,17 @@
 import { buttonVariants, cardVariants } from "@heroui/styles";
 import type { ReactNode } from "react";
+import { STATIC_PAGES } from "./pages";
 import { StyleAssets } from "./style-assets";
+import { REPO_URL } from "./urls";
 
-export const REPO_URL = "https://github.com/multiplehats/stamppot";
+/**
+ * JSON-LD inside a `<script>` is HTML, not JavaScript: an unescaped `<` would
+ * let a string in the payload close the tag early. Escaping it keeps the
+ * document well-formed whatever the registry happens to contain.
+ */
+export function safeJson(value: unknown): string {
+  return JSON.stringify(value).replaceAll("<", "\\u003c");
+}
 
 /**
  * HeroUI's own component classes, resolved once. `@heroui/styles` is a pure
@@ -149,6 +158,7 @@ export function SiteNavigation({
 }
 
 const FOOTER_LINKS = [
+  ...STATIC_PAGES.map((page) => ({ href: page.path, label: page.navLabel })),
   { href: REPO_URL, label: "GitHub" },
   { href: `${REPO_URL}/blob/main/CONTRIBUTING.md`, label: "Bijdragen" },
   { href: `${REPO_URL}/blob/main/SECURITY.md`, label: "Beveiliging" },

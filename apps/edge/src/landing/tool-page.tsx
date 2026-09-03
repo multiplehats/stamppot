@@ -8,13 +8,13 @@ import {
   buttonClass,
   CONTAINER,
   card,
-  REPO_URL,
   Section,
   SectionHeading,
   SiteDocument,
   SiteFooter,
   SiteNavigation,
 } from "./site";
+import { REPO_URL } from "./urls";
 
 interface ToolPageProps {
   readonly content: ToolContentCatalog;
@@ -138,7 +138,7 @@ function Breadcrumb({ tool }: { readonly tool: ToolPageContent }): ReactNode {
 function ToolCard({ endpoint, tool }: HeroProps): ReactNode {
   const facts = [
     { label: "Endpoint", value: endpoint.replace(URL_SCHEME, "") },
-    { label: "Toegang", value: "Gratis · geen account · read-only" },
+    { label: "Toegang", value: "Gratis · geen account" },
     { label: "Resultaat", value: "JSON" },
   ];
 

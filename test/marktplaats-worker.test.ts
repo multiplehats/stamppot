@@ -262,7 +262,12 @@ describe("Stamppot Worker Marktplaats routes", () => {
       "Tweedehands advertenties zoeken op Marktplaats"
     );
     const markdownBody = await markdownResponse.text();
-    expect(markdownBody.startsWith("# ")).toBe(true);
+    // Frontmatter first, so an agent gets the metadata without reading prose.
+    expect(markdownBody.startsWith("---\n")).toBe(true);
+    expect(markdownBody).toContain(
+      'canonical: "https://stamppot.test/tools/find_marktplaats_listings"'
+    );
+    expect(markdownBody).toContain("\n# ");
   });
 
   it("exposes exactly the two Marktplaats tools on /mcp/marktplaats and via /mcp", async () => {

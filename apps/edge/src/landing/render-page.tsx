@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 import { injectRSCPayload } from "rsc-html-stream/server";
 import type { ToolContentCatalog, ToolPageContent } from "./content";
 import { LandingPage } from "./landing-page";
+import type { StaticPage } from "./pages";
 import { isRscUrl } from "./routes";
+import { NotFoundPage, StaticPageView } from "./static-page";
 import { ToolPage } from "./tool-page";
 
 interface SsrEntry {
@@ -17,12 +19,11 @@ interface SsrEntry {
 export function renderLandingPage(
   request: Request,
   origin: string,
-  registry: OperationRegistry,
-  content: ToolContentCatalog
+  registry: OperationRegistry
 ): Promise<Response> {
   return renderPage(
     request,
-    <LandingPage content={content} origin={origin} registry={registry} />
+    <LandingPage origin={origin} registry={registry} />
   );
 }
 
@@ -36,6 +37,21 @@ export function renderToolPage(
     request,
     <ToolPage content={content} origin={origin} tool={tool} />
   );
+}
+
+export function renderStaticPage(
+  request: Request,
+  origin: string,
+  page: StaticPage
+): Promise<Response> {
+  return renderPage(request, <StaticPageView origin={origin} page={page} />);
+}
+
+export function renderNotFoundPage(
+  request: Request,
+  path: string
+): Promise<Response> {
+  return renderPage(request, <NotFoundPage path={path} />);
 }
 
 async function renderPage(
