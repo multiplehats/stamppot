@@ -55,6 +55,14 @@
         "limit": 30,
         "period": 60
       }
+    },
+    {
+      "name": "MARKTPLAATS_UPSTREAM_READS",
+      "namespace_id": "1763268923",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
     }
   ],
   "observability": {

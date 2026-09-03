@@ -1,5 +1,9 @@
 import { defineOperation, type Operation } from "@stamppot/core";
 import {
+  type UpstreamLimiter,
+  UpstreamUnavailableError,
+} from "@stamppot/upstream";
+import {
   type FindOvStopInput,
   type FindOvStopSuccess,
   findOvStopInputSchema,
@@ -26,7 +30,6 @@ import {
   UnknownStationError,
   UnknownStopError,
   UPSTREAM_RETRY_AFTER_SECONDS,
-  UpstreamUnavailableError,
 } from "./contracts";
 
 export interface OvCallContext {
@@ -85,9 +88,7 @@ export interface StopDirectoryService {
   ) => Promise<FindOvStopSuccess>;
 }
 
-export interface OvUpstreamLimiter {
-  readonly consume: (request: Request, scope: string) => Promise<boolean>;
-}
+export type OvUpstreamLimiter = UpstreamLimiter;
 
 export interface OvMcpDependencies {
   readonly stopDepartures: StopDeparturesService;

@@ -1,3 +1,8 @@
+import {
+  MemoryUpstreamCache,
+  type UpstreamFetch,
+  UpstreamUnavailableError,
+} from "@stamppot/upstream";
 import { describe, expect, it } from "vitest";
 import departuresText from "../packages/mcp-ov/fixtures/ns-departures.json?raw";
 import disruptionsText from "../packages/mcp-ov/fixtures/ns-disruptions.json?raw";
@@ -7,14 +12,9 @@ import stopDeparturesText from "../packages/mcp-ov/fixtures/ovapi-stoparea-depar
 import {
   UnknownStationError,
   UnknownStopError,
-  UpstreamUnavailableError,
 } from "../packages/mcp-ov/src/contracts";
 import { NsClient } from "../packages/mcp-ov/src/ns-client";
 import { OvApiClient } from "../packages/mcp-ov/src/ovapi-client";
-import {
-  MemoryUpstreamCache,
-  type UpstreamFetch,
-} from "../packages/mcp-ov/src/upstream";
 
 const NOW = new Date("2026-08-28T14:00:00.000Z");
 const WALL_CLOCK_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;

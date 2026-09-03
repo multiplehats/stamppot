@@ -1,4 +1,5 @@
 import type { Operation, OperationContext } from "@stamppot/core";
+import { UpstreamUnavailableError } from "@stamppot/upstream";
 import { describe, expect, it } from "vitest";
 import stationsText from "../packages/mcp-ov/fixtures/ns-stations-small.json?raw";
 import stopAreasText from "../packages/mcp-ov/fixtures/ovapi-stopareas-small.json?raw";
@@ -6,7 +7,6 @@ import {
   StopDirectoryUnavailableError,
   UnknownStationError,
   UnknownStopError,
-  UpstreamUnavailableError,
 } from "../packages/mcp-ov/src/contracts";
 import {
   createOvOperations,

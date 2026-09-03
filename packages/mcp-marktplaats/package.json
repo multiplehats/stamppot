@@ -1,0 +1,15 @@
+{
+  "name": "@stamppot/mcp-marktplaats",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cloudflare": "./src/cloudflare.ts"
+  },
+  "dependencies": {
+    "@stamppot/core": "workspace:*",
+    "@stamppot/upstream": "workspace:*",
+    "zod": "catalog:"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "response": {
+    "numFound": 1,
+    "start": 0,
+    "maxScore": 9.4204235,
+    "numFoundExact": true,
+    "docs": [
+      {
+        "woonplaatsnaam": "Enschede",
+        "provincienaam": "Overijssel",
+        "centroide_ll": "POINT(6.8777881 52.22080698)",
+        "gemeentenaam": "Enschede"
+      }
+    ]
+  }
+}

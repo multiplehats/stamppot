@@ -6,6 +6,8 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
+    "agent:dev": "pnpm --filter @stamppot/agent dev",
+    "agent:eval": "pnpm --filter @stamppot/agent eval",
     "build": "vite build",
     "cf-typegen": "wrangler types --config apps/edge/wrangler.jsonc --env-interface CloudflareBindings",
     "changeset": "changeset",
@@ -24,7 +26,7 @@
     "preview": "pnpm build && vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "pnpm cf-typegen && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "pnpm cf-typegen && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && pnpm --filter @stamppot/agent typecheck",
     "version-packages": "changeset version"
   },
   "dependencies": {
@@ -42,7 +44,9 @@
     "@stamppot/core": "workspace:*",
     "@stamppot/mcp-adapter": "workspace:*",
     "@stamppot/mcp-groceries": "workspace:*",
+    "@stamppot/mcp-marktplaats": "workspace:*",
     "@stamppot/mcp-ov": "workspace:*",
+    "@stamppot/upstream": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-react": "catalog:",

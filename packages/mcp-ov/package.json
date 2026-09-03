@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@stamppot/core": "workspace:*",
+    "@stamppot/upstream": "workspace:*",
     "zod": "catalog:"
   }
 }

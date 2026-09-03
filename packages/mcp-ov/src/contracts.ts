@@ -17,6 +17,10 @@ export const MAX_UPSTREAM_TEXT_CHARACTERS = 300;
 export const MAX_UPSTREAM_ADVICES = 5;
 export const MAX_UPSTREAM_MESSAGES = 5;
 export const UPSTREAM_RETRY_AFTER_SECONDS = 60;
+export const NS_TIMEOUT_MS = 10_000;
+export const OVAPI_TIMEOUT_MS = 5000;
+export const DEPARTURES_CACHE_TTL_SECONDS = 30;
+export const PLANNING_CACHE_TTL_SECONDS = 60;
 
 const AMSTERDAM_TIME_ZONE = "Europe/Amsterdam";
 const STATION_CODE_PATTERN = /^[A-Za-z0-9]{2,10}$/;
@@ -31,14 +35,6 @@ const STATION_CODE_PATTERN = /^[A-Za-z0-9]{2,10}$/;
  */
 const STOP_AREA_CODE_PATTERN =
   /^[\p{Letter}\p{Number}][\p{Letter}\p{Mark}\p{Number} .&+_-]{0,39}$/u;
-
-/** The upstream answered too slowly, unreachably, or with an unusable body. */
-export class UpstreamUnavailableError extends Error {
-  constructor() {
-    super("Public transport upstream is unavailable");
-    this.name = "UpstreamUnavailableError";
-  }
-}
 
 /** NS rejected the supplied station code. */
 export class UnknownStationError extends Error {

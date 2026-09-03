@@ -1,0 +1,833 @@
+{
+  "listings": [
+    {
+      "itemId": "m2437176273",
+      "title": "Playstation 5 disk edition 2 controllers 2 games",
+      "description": "Goed als nieuw ps5 met 2 controllers tekken 8 en demon souls de wit controller heeft een beetje drift in the joystick",
+      "categorySpecificDescription": "Goed als nieuw ps5 met 2 controllers tekken 8 en demon souls de wit controller heeft een beetje drift in the joystick",
+      "thinContent": true,
+      "priceInfo": {
+        "priceCents": 50000,
+        "priceType": "MIN_BID"
+      },
+      "location": {
+        "cityName": "Enschede",
+        "countryName": "Nederland",
+        "countryAbbreviation": "NL",
+        "distanceMeters": 1000,
+        "isBuyerLocation": false,
+        "onCountryLevel": false,
+        "abroad": false,
+        "latitude": 52.216656096354,
+        "longitude": 6.8944822762991
+      },
+      "date": "Vandaag",
+      "imageUrls": [
+        "//images.marktplaats.com/api/v1/hz-mp-pro-listing/images/0de51ef9-476f-473f-ae30-18e865da4868?rule=ecg_mp_eps$_82.jpg"
+      ],
+      "sellerInformation": {
+        "sellerId": 1,
+        "sellerName": "Verkoper A",
+        "showSoiUrl": true,
+        "showWebsiteUrl": false,
+        "isVerified": false
+      },
+      "categoryId": 2954,
+      "priorityProduct": "NONE",
+      "videoOnVip": false,
+      "urgencyFeatureActive": false,
+      "napAvailable": false,
+      "attributes": [
+        {
+          "key": "condition",
+          "value": "Zo goed als nieuw",
+          "values": ["Zo goed als nieuw"]
+        },
+        {
+          "key": "delivery",
+          "value": "Ophalen of Verzenden",
+          "values": ["Ophalen of Verzenden"]
+        }
+      ],
+      "extendedAttributes": [
+        {
+          "key": "delivery",
+          "value": "Ophalen of Verzenden",
+          "values": ["Ophalen of Verzenden"]
+        },
+        {
+          "key": "condition",
+          "value": "Zo goed als nieuw",
+          "values": ["Zo goed als nieuw"]
+        },
+        {
+          "key": "model",
+          "value": "Playstation 5",
+          "values": ["Playstation 5"]
+        }
+      ],
+      "traits": ["PACKAGE_FREE"],
+      "verticals": [
+        "gaming_computers_sony_playstation_5",
+        "consoles_and_games",
+        "barcode-supported"
+      ],
+      "pictures": [
+        {
+          "id": 0,
+          "url": "https://images.marktplaats.com/api/v1/hz-mp-pro-listing/images/0de51ef9-476f-473f-ae30-18e865da4868?rule=ecg_mp_eps$_#.jpg",
+          "mediumUrl": "https://images.marktplaats.com/api/v1/hz-mp-pro-listing/images/0de51ef9-476f-473f-ae30-18e865da4868?rule=ecg_mp_eps$_82.jpg",
+          "aspectRatio": {
+            "width": 9,
+            "height": 16
+          }
+        }
+      ],
+      "searchType": "TokenMatch",
+      "reserved": true,
+      "vipUrl": "/v/spelcomputers-en-games/spelcomputers-sony-playstation-5/m2437176273-playstation-5-disk-edition-2-controllers-2-games"
+    },
+    {
+      "itemId": "m2437828611",
+      "title": "Geseald. Discdrive voor ps5 slim of pro nieuw",
+      "description": "Nieuw in doos ongeopend",
+      "categorySpecificDescription": "Nieuw in doos ongeopend",
+      "thinContent": true,
+      "priceInfo": {
+        "priceCents": 8000,
+        "priceType": "FIXED"
+      },
+      "location": {
+        "cityName": "Enschede",
+        "countryName": "Nederland",
+        "countryAbbreviation": "NL",
+        "distanceMeters": 5000,
+        "isBuyerLocation": false,
+        "onCountryLevel": false,
+        "abroad": false,
+        "latitude": 52.213172564682,
+        "longitude": 6.9773438957174
+      },
+      "date": "Gisteren",
+      "imageUrls": [
+        "//images.marktplaats.com/api/v1/hz-mp-pro-listing/images/37a7176b-bcc0-4af7-8111-f37773c20188?rule=ecg_mp_eps$_82.jpg"
+      ],
+      "sellerInformation": {
+        "sellerId": 2,
+        "sellerName": "Verkoper B",
+        "showSoiUrl": true,
+        "showWebsiteUrl": false,
+        "isVerified": false
+      },
+      "categoryId": 2954,
+      "priorityProduct": "NONE",
+      "videoOnVip": false,
+      "urgencyFeatureActive": false,
+      "napAvailable": false,
+      "attributes": [
+        {
+          "key": "condition",
+          "value": "Gebruikt",
+          "values": ["Gebruikt"]
+        },
+        {
+          "key": "delivery",
+          "value": "Ophalen",
+          "values": ["Ophalen"]
+        }
+      ],
+      "extendedAttributes": [
+        {
+          "key": "delivery",
+          "value": "Ophalen",
+          "values": ["Ophalen"]
+        },
+        {
+          "key": "condition",
+          "value": "Gebruikt",
+          "values": ["Gebruikt"]
+        }
+      ],
+      "traits": ["PACKAGE_FREE"],
+      "verticals": [
+        "gaming_computers_sony_playstation_5",
+        "consoles_and_games",
+        "barcode-supported"
+      ],
+      "pictures": [
+        {
+          "id": 0,
+          "url": "https://images.marktplaats.com/api/v1/hz-mp-pro-listing/images/37a7176b-bcc0-4af7-8111-f37773c20188?rule=ecg_mp_eps$_#.jpg",
+          "mediumUrl": "https://images.marktplaats.com/api/v1/hz-mp-pro-listing/images/37a7176b-bcc0-4af7-8111-f37773c20188?rule=ecg_mp_eps$_82.jpg",
+          "aspectRatio": {
+            "width": 637,
+            "height": 800
+          }
+        }
+      ],
+      "searchType": "TokenMatch",
+      "reserved": false,
+      "vipUrl": "/v/spelcomputers-en-games/spelcomputers-sony-playstation-5/m2437828611-geseald-discdrive-voor-ps5-slim-of-pro-nieuw"
+    },
+    {
+      "itemId": "m2437197655",
+      "title": "PS5 Controller Stick Drift Reparatie",
+      "description": "Last van stick drift of onnauwkeurige joysticks op je ps5 dualsense-controller? Ik vervang de originele sticks door tmr hall effect-sticks. Deze zijn nauwkeuriger en veel beter bestand tegen stick dri",
+      "categorySpecificDescription": "Last van stick drift of onnauwkeurige joysticks op je ps5 dualsense-controller? Ik vervang de originele sticks door tmr hall effect-sticks. Deze zijn nauwkeuriger en veel beter bestand tegen stick dri",
+      "thinContent": false,
+      "priceInfo": {
+        "priceCents": 0,
+        "priceType": "FAST_BID"
+      },
+      "location": {
+        "cityName": "Enschede",
+        "countryName": "Nederland",
+        "countryAbbreviation": "NL",
+        "distanceMeters": 4000,
+        "isBuyerLocation": false,
+        "onCountryLevel": false,
+        "abroad": false,
+        "latitude": 52.203595292943,
+        "longitude": 6.9517515972511
+      },
+      "date": "30 aug 26",
+      "imageUrls": [
+        "//images.marktplaats.com/api/v1/hz-mp-pro-listing/images/dd6755dc-d388-4318-9cbd-c41f70f5b6aa?rule=ecg_mp_eps$_82.jpg"
+      ],
+      "sellerInformation": {
+        "sellerId": 3,
+        "sellerName": "Verkoper C",
+        "showSoiUrl": true,
+        "showWebsiteUrl": false,
+        "isVerified": false
+      },
+      "categoryId": 2954,
+      "priorityProduct": "DAGTOPPER",
+      "videoOnVip": false,
+      "urgencyFeatureActive": false,
+      "napAvailable": false,
+      "attributes": [
+        {
+          "key": "condition",
+          "value": "Nieuw",
+          "values": ["Nieuw"]
+        },
+        {
+          "key": "delivery",
+          "value": "Ophalen of Verzenden",
+          "values": ["Ophalen of Verzenden"]
+        }
+      ],
+      "extendedAttributes": [
+        {
+          "key": "delivery",
+          "value": "Ophalen of Verzenden",
+          "values": ["Ophalen of Verzenden"]
+        },
+        {
+          "key": "condition",
+          "value": "Nieuw",
+          "values": ["Nieuw"]
+        },
+        {
+          "key": "model",
+          "value": "Playstation 5",
+          "values": ["Playstation 5"]
+        }
+      ],
+      "traits": ["PACKAGE_FREE"],
+      "verticals": [
+        "gaming_computers_sony_playstation_5",
+        "consoles_and_games",
+        "barcode-supported"
+      ],
+      "pictures": [
+        {
+          "id": 0,
+          "url": "https://images.marktplaats.com/api/v1/hz-mp-pro-listing/images/dd6755dc-d388-4318-9cbd-c41f70f5b6aa?rule=ecg_mp_eps$_#.jpg",
+          "mediumUrl": "https://images.marktplaats.com/api/v1/hz-mp-pro-listing/images/dd6755dc-d388-4318-9cbd-c41f70f5b6aa?rule=ecg_mp_eps$_82.jpg",
+          "aspectRatio": {
+            "width": 393,
+            "height": 268
+          }
+        }
+      ],
+      "searchType": "TokenMatch",
+      "reserved": false,
+      "vipUrl": "/v/spelcomputers-en-games/spelcomputers-sony-playstation-5/m2437197655-ps5-controller-stick-drift-reparatie"
+    },
+    {
+      "itemId": "m2437115640",
+      "title": "Digital ps5 nieuw!!",
+      "description": "Playstation 5 nieuw ongeopend nog in de seal doe een leuke bod en realistisch",
+      "categorySpecificDescription": "Playstation 5 nieuw ongeopend nog in de seal doe een leuke bod en realistisch",
+      "thinContent": true,
+      "priceInfo": {
+        "priceCents": 0,
+        "priceType": "SEE_DESCRIPTION"
+      },
+      "location": {
+        "cityName": "Hengelo",
+        "countryName": "Nederland",
+        "countryAbbreviation": "NL",
+        "distanceMeters": -1000,
+        "isBuyerLocation": false,
+        "onCountryLevel": false,
+        "abroad": false,
+        "latitude": 52.278656441089,
+        "longitude": 6.7895748120206
+      },
+      "date": "22 aug 26",
+      "imageUrls": [
+        "//images.marktplaats.com/api/v1/hz-mp-pro-listing/images/c80d59e4-32ad-49de-afad-62297d00ec07?rule=ecg_mp_eps$_82.jpg"
+      ],
+      "sellerInformation": {
+        "sellerId": 4,
+        "sellerName": "Verkoper D",
+        "showSoiUrl": true,
+        "showWebsiteUrl": false,
+        "isVerified": false
+      },
+      "categoryId": 2954,
+      "priorityProduct": "NONE",
+      "videoOnVip": false,
+      "urgencyFeatureActive": false,
+      "napAvailable": false,
+      "attributes": [
+        {
+          "key": "condition",
+          "value": "Nieuw",
+          "values": ["Nieuw"]
+        },
+        {
+          "key": "delivery",
+          "value": "Ophalen of Verzenden",
+          "values": ["Ophalen of Verzenden"]
+        }
+      ],
+      "extendedAttributes": [
+        {
+          "key": "delivery",
+          "value": "Ophalen of Verzenden",
+          "values": ["Ophalen of Verzenden"]
+        },
+        {
+          "key": "condition",
+          "value": "Nieuw",
+          "values": ["Nieuw"]
+        },
+        {
+          "key": "model",
+          "value": "Playstation 5 Digital",
+          "values": ["Playstation 5 Digital"]
+        }
+      ],
+      "traits": ["PACKAGE_FREE"],
+      "verticals": [
+        "gaming_computers_sony_playstation_5",
+        "consoles_and_games",
+        "barcode-supported"
+      ],
+      "pictures": [
+        {
+          "id": 0,
+          "url": "https://images.marktplaats.com/api/v1/hz-mp-pro-listing/images/c80d59e4-32ad-49de-afad-62297d00ec07?rule=ecg_mp_eps$_#.jpg",
+          "mediumUrl": "https://images.marktplaats.com/api/v1/hz-mp-pro-listing/images/c80d59e4-32ad-49de-afad-62297d00ec07?rule=ecg_mp_eps$_82.jpg",
+          "aspectRatio": {
+            "width": 3,
+            "height": 4
+          }
+        }
+      ],
+      "searchType": "TokenMatch",
+      "reserved": false,
+      "vipUrl": "/v/spelcomputers-en-games/spelcomputers-sony-playstation-5/m2437115640-digital-ps5-nieuw"
+    }
+  ],
+  "topBlock": [
+    {
+      "itemId": "a1529988089",
+      "title": "Sony Playstation 5 (PS5) Disc Edition 825GB Wit met GARAN...",
+      "description": "Voor 16:00 uur besteld? Dezelfde dag gratis verzonden of ophalen in de winkel. De goedkoopste van nederland incl. Garantie. Wees er snel bij want de voorraad is beperkt! Eventuele inruil met uw huidig",
+      "categorySpecificDescription": "Voor 16:00 uur besteld? Dezelfde dag gratis verzonden of ophalen in de winkel. De goedkoopste van nederland incl. Garantie. Wees er snel bij want de voorraad is beperkt! Eventuele inruil met uw huidig",
+      "thinContent": false,
+      "priceInfo": {
+        "priceCents": 52999,
+        "priceType": "FIXED"
+      },
+      "location": {
+        "cityName": "Enschede",
+        "countryName": "Nederland",
+        "countryAbbreviation": "NL",
+        "distanceMeters": 0,
+        "isBuyerLocation": true,
+        "onCountryLevel": false,
+        "abroad": false,
+        "latitude": 52.220147209964,
+        "longitude": 6.9006163525832
+      },
+      "date": "Vandaag",
+      "imageUrls": [
+        "//admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/3b/3bac795b-e637-4b73-866a-64d335913eff?rule=eps_82.JPG",
+        "//admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/35/35c8a8fb-ec84-43fd-93a5-da2e03b8cd47?rule=eps_82.JPG",
+        "//admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/14/14ac714e-4f45-4182-a3b7-deb4938e4105?rule=eps_82.JPG"
+      ],
+      "sellerInformation": {
+        "sellerId": 5,
+        "sellerName": "Verkoper E",
+        "showSoiUrl": true,
+        "showWebsiteUrl": true,
+        "isVerified": true
+      },
+      "categoryId": 2954,
+      "pageLocation": "L2_SEARCH_TOP",
+      "priorityProduct": "TOPADVERTENTIE",
+      "opvalStickerText": "Klarna & iDeal in3",
+      "videoOnVip": false,
+      "urgencyFeatureActive": false,
+      "napAvailable": false,
+      "attributes": [
+        {
+          "key": "condition",
+          "value": "Zo goed als nieuw",
+          "values": ["Zo goed als nieuw"]
+        },
+        {
+          "key": "delivery",
+          "value": "Ophalen of Verzenden",
+          "values": ["Ophalen of Verzenden"]
+        }
+      ],
+      "extendedAttributes": [
+        {
+          "key": "delivery",
+          "value": "Ophalen of Verzenden",
+          "values": ["Ophalen of Verzenden"]
+        },
+        {
+          "key": "condition",
+          "value": "Zo goed als nieuw",
+          "values": ["Zo goed als nieuw"]
+        }
+      ],
+      "traits": [
+        "VERIFIED_SELLER",
+        "NO_MARKETING",
+        "MICROTIP",
+        "CUSTOMER_SUPPORT_BUSINESS_LINE",
+        "EXTRA_IMAGES_SNIPPET",
+        "ADMARKT_CONSOLE",
+        "IMAGES_GALLERY",
+        "SELLER_PROFILE_URL",
+        "UNIQUE_SELLING_POINTS",
+        "SHOPPING_CART",
+        "PROFILE"
+      ],
+      "verticals": [
+        "gaming_computers_sony_playstation_5",
+        "consoles_and_games",
+        "barcode-supported"
+      ],
+      "pictures": [
+        {
+          "id": 0,
+          "mediaId": "00000000-0000-0000-0000-000000000000",
+          "url": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/3b/3bac795b-e637-4b73-866a-64d335913eff?rule=eps_#.JPG",
+          "sizes": {
+            "XL": "84",
+            "M": "82",
+            "XXXL": "86",
+            "L": "83",
+            "XXL": "85",
+            "XXS": "14",
+            "XS": "14",
+            "S": "82"
+          },
+          "extraSmallUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/3b/3bac795b-e637-4b73-866a-64d335913eff?rule=eps_14.JPG",
+          "mediumUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/3b/3bac795b-e637-4b73-866a-64d335913eff?rule=eps_82.JPG",
+          "largeUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/3b/3bac795b-e637-4b73-866a-64d335913eff?rule=eps_83.JPG",
+          "extraExtraLargeUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/3b/3bac795b-e637-4b73-866a-64d335913eff?rule=eps_85.JPG",
+          "aspectRatio": {
+            "width": 512,
+            "height": 405
+          }
+        },
+        {
+          "id": 0,
+          "mediaId": "00000000-0000-0000-0000-000000000000",
+          "url": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/35/35c8a8fb-ec84-43fd-93a5-da2e03b8cd47?rule=eps_#.JPG",
+          "sizes": {
+            "XL": "84",
+            "M": "82",
+            "XXXL": "86",
+            "L": "83",
+            "XXL": "85",
+            "XXS": "14",
+            "XS": "14",
+            "S": "82"
+          },
+          "extraSmallUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/35/35c8a8fb-ec84-43fd-93a5-da2e03b8cd47?rule=eps_14.JPG",
+          "mediumUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/35/35c8a8fb-ec84-43fd-93a5-da2e03b8cd47?rule=eps_82.JPG",
+          "largeUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/35/35c8a8fb-ec84-43fd-93a5-da2e03b8cd47?rule=eps_83.JPG",
+          "extraExtraLargeUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/35/35c8a8fb-ec84-43fd-93a5-da2e03b8cd47?rule=eps_85.JPG",
+          "aspectRatio": {
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "id": 0,
+          "mediaId": "00000000-0000-0000-0000-000000000000",
+          "url": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/14/14ac714e-4f45-4182-a3b7-deb4938e4105?rule=eps_#.JPG",
+          "sizes": {
+            "XL": "84",
+            "M": "82",
+            "XXXL": "86",
+            "L": "83",
+            "XXL": "85",
+            "XXS": "14",
+            "XS": "14",
+            "S": "82"
+          },
+          "extraSmallUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/14/14ac714e-4f45-4182-a3b7-deb4938e4105?rule=eps_14.JPG",
+          "mediumUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/14/14ac714e-4f45-4182-a3b7-deb4938e4105?rule=eps_82.JPG",
+          "largeUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/14/14ac714e-4f45-4182-a3b7-deb4938e4105?rule=eps_83.JPG",
+          "extraExtraLargeUrl": "https://admarkt-cdn.marktplaats.com/api/v1/icas-mp-pro-admarkt/images/14/14ac714e-4f45-4182-a3b7-deb4938e4105?rule=eps_85.JPG",
+          "aspectRatio": {
+            "width": 4,
+            "height": 3
+          }
+        }
+      ],
+      "reserved": false,
+      "vipUrl": "/v/spelcomputers-en-games/spelcomputers-sony-playstation-5/a1529988089-sony-playstation-5-ps5-disc-edition-825gb-wit-met-garan"
+    }
+  ],
+  "facets": [
+    {
+      "key": "PriceCents",
+      "type": "AttributeRangeFacet"
+    },
+    {
+      "key": "RelevantCategories",
+      "type": "CategoryTreeFacet",
+      "categories": [
+        {
+          "id": 356,
+          "selected": false,
+          "isValuableForSeo": true,
+          "dominant": false,
+          "label": "Spelcomputers en Games",
+          "key": "spelcomputers-en-games",
+          "parentId": null,
+          "parentKey": false
+        },
+        {
+          "id": 2954,
+          "histogramCount": 45,
+          "selected": true,
+          "isValuableForSeo": true,
+          "dominant": true,
+          "label": "Spelcomputers | Sony PlayStation 5",
+          "key": "spelcomputers-sony-playstation-5",
+          "parentId": 356,
+          "parentKey": "spelcomputers-en-games"
+        }
+      ]
+    },
+    {
+      "id": 1122,
+      "key": "condition",
+      "type": "AttributeGroupFacet",
+      "label": "Conditie",
+      "attributeGroup": [
+        {
+          "attributeValueKey": "Nieuw",
+          "attributeValueId": 30,
+          "attributeValueLabel": "Nieuw",
+          "histogramCount": 15,
+          "selected": false,
+          "isValuableForSeo": false
+        },
+        {
+          "attributeValueKey": "Zo goed als nieuw",
+          "attributeValueId": 31,
+          "attributeValueLabel": "Zo goed als nieuw",
+          "histogramCount": 25,
+          "selected": false,
+          "isValuableForSeo": false
+        },
+        {
+          "attributeValueKey": "Gebruikt",
+          "attributeValueId": 32,
+          "attributeValueLabel": "Gebruikt",
+          "selected": false,
+          "isValuableForSeo": false
+        }
+      ],
+      "singleSelect": false,
+      "categoryId": 2954,
+      "sortIndex": 10
+    },
+    {
+      "id": 2750,
+      "key": "model",
+      "type": "AttributeGroupFacet",
+      "label": "Model",
+      "attributeGroup": [
+        {
+          "attributeValueKey": "Playstation 5",
+          "attributeValueId": 13201,
+          "attributeValueLabel": "Playstation 5",
+          "histogramCount": 12,
+          "selected": false,
+          "isValuableForSeo": true
+        },
+        {
+          "attributeValueKey": "Playstation 5 Digital",
+          "attributeValueId": 13202,
+          "attributeValueLabel": "Playstation 5 Digital",
+          "histogramCount": 5,
+          "selected": false,
+          "isValuableForSeo": true
+        }
+      ],
+      "singleSelect": false,
+      "categoryId": 2954,
+      "sortIndex": 20
+    },
+    {
+      "id": 8,
+      "key": "delivery",
+      "type": "AttributeGroupFacet",
+      "label": "Levering",
+      "attributeGroup": [
+        {
+          "attributeValueKey": "Ophalen",
+          "attributeValueId": 33,
+          "attributeValueLabel": "Ophalen",
+          "histogramCount": 44,
+          "selected": false,
+          "isValuableForSeo": false
+        },
+        {
+          "attributeValueKey": "Verzenden",
+          "attributeValueId": 34,
+          "attributeValueLabel": "Verzenden",
+          "histogramCount": 28,
+          "selected": false,
+          "isValuableForSeo": false
+        }
+      ],
+      "singleSelect": false,
+      "categoryId": 2954,
+      "sortIndex": 666
+    },
+    {
+      "id": 987654321,
+      "key": "offeredSince",
+      "type": "AttributeGroupFacet",
+      "label": "Aangeboden sinds",
+      "attributeGroup": [
+        {
+          "attributeValueKey": "Vandaag",
+          "attributeValueLabel": "Vandaag",
+          "histogramCount": 1,
+          "selected": false,
+          "isValuableForSeo": false,
+          "default": false
+        },
+        {
+          "attributeValueKey": "Gisteren",
+          "attributeValueLabel": "Gisteren",
+          "histogramCount": 6,
+          "selected": false,
+          "isValuableForSeo": false,
+          "default": false
+        },
+        {
+          "attributeValueKey": "Altijd",
+          "attributeValueLabel": "Altijd",
+          "histogramCount": 45,
+          "selected": true,
+          "isValuableForSeo": false,
+          "default": true
+        }
+      ],
+      "singleSelect": true,
+      "categoryId": 0
+    }
+  ],
+  "totalResultCount": 45,
+  "maxAllowedPageNumber": 5,
+  "correlationId": "ae453970-7862-4b1e-a1d4-f3e2df4695f8",
+  "suggestions": {
+    "query": "ps5"
+  },
+  "suggestedQuery": "ps5",
+  "originalQuery": "ps5",
+  "sortOptions": [
+    {
+      "sortBy": "OPTIMIZED",
+      "sortOrder": "DECREASING"
+    },
+    {
+      "sortBy": "SORT_INDEX",
+      "sortOrder": "DECREASING"
+    },
+    {
+      "sortBy": "SORT_INDEX",
+      "sortOrder": "INCREASING"
+    },
+    {
+      "sortBy": "PRICE",
+      "sortOrder": "INCREASING"
+    },
+    {
+      "sortBy": "PRICE",
+      "sortOrder": "DECREASING"
+    },
+    {
+      "sortBy": "LOCATION",
+      "sortOrder": "INCREASING"
+    }
+  ],
+  "isSearchSaved": false,
+  "hasErrors": false,
+  "alternativeLocales": [],
+  "searchRequest": {
+    "originalRequest": {
+      "categories": {
+        "l1Category": {
+          "id": 356,
+          "key": "spelcomputers-en-games",
+          "fullName": "Spelcomputers en Games"
+        },
+        "l2Category": {
+          "id": 2954,
+          "key": "spelcomputers-sony-playstation-5",
+          "fullName": "Spelcomputers | Sony PlayStation 5"
+        }
+      },
+      "searchQuery": "ps5",
+      "attributes": {},
+      "attributesById": [],
+      "attributesByKey": [],
+      "attributeRanges": [],
+      "attributeLabels": [],
+      "sortOptions": {
+        "sortBy": "SORT_INDEX",
+        "sortOrder": "DECREASING",
+        "sortAttribute": ""
+      },
+      "pagination": {
+        "offset": 0,
+        "limit": 10
+      },
+      "distance": {
+        "postcode": "7511",
+        "distanceMeters": 20000
+      },
+      "viewOptions": {
+        "kind": "list-view"
+      },
+      "bypassSpellingSuggestion": false
+    },
+    "categories": {
+      "l1Category": {
+        "id": 356,
+        "key": "spelcomputers-en-games",
+        "fullName": "Spelcomputers en Games"
+      },
+      "l2Category": {
+        "id": 2954,
+        "key": "spelcomputers-sony-playstation-5",
+        "fullName": "Spelcomputers | Sony PlayStation 5"
+      }
+    },
+    "searchQuery": "ps5",
+    "attributes": {},
+    "attributesById": [],
+    "attributesByKey": [],
+    "attributeRanges": [],
+    "attributeLabels": [],
+    "sortOptions": {
+      "sortBy": "SORT_INDEX",
+      "sortOrder": "DECREASING",
+      "sortAttribute": ""
+    },
+    "pagination": {
+      "offset": 0,
+      "limit": 10
+    },
+    "distance": {
+      "postcode": "7511",
+      "distanceMeters": 20000
+    },
+    "viewOptions": {
+      "kind": "list-view"
+    },
+    "bypassSpellingSuggestion": false
+  },
+  "showSuggestionTooltip": false,
+  "showAttributeTooltip": false,
+  "searchCategory": 2954,
+  "searchCategoryOptions": [
+    {
+      "fullName": "Spelcomputers en Games",
+      "id": 356,
+      "key": "spelcomputers-en-games",
+      "name": "Spelcomputers, Games"
+    },
+    {
+      "fullName": "Games | Atari",
+      "id": 1729,
+      "key": "games-atari",
+      "name": "Atari",
+      "parentId": 356,
+      "parentKey": "spelcomputers-en-games"
+    }
+  ],
+  "seoFriendlyAttributes": ["model"],
+  "seoFriendlyTextAttributes": {},
+  "attributeHierarchy": {
+    "offeredSince": [
+      {
+        "attributeValueId": null,
+        "attributeValueLabel": "Altijd",
+        "attributeValueKey": "Altijd",
+        "attributeLabel": "Aangeboden sinds",
+        "isDefault": true
+      }
+    ]
+  },
+  "categoriesById": {
+    "356": {
+      "fullName": "Spelcomputers en Games",
+      "id": 356,
+      "key": "spelcomputers-en-games",
+      "name": "Spelcomputers, Games"
+    },
+    "2954": {
+      "fullName": "Spelcomputers | Sony PlayStation 5",
+      "id": 2954,
+      "key": "spelcomputers-sony-playstation-5",
+      "name": "PlayStation 5",
+      "parentId": 356
+    }
+  },
+  "metaTags": {
+    "metaTitle": "Sony PlayStation 5 in Spelcomputers en Games | Marktplaats",
+    "metaDescription": "Ontdek de Sony PlayStation 5 in de categorie Spelcomputers. Ideale console voor gamers. Bekijk de opties en ontdek waar je deze kunt aanschaffen.",
+    "pageTitleH1": "Sony PlayStation 5 te koop in Nederland"
+  },
+  "paaContent": {
+    "questions": {
+      "1": "Wat zijn de belangrijkste functies van de PS5?"
+    },
+    "answers": {
+      "1": "De PS5 beschikt over verschillende belangrijke functies, zoals een ultra-snelle SSD die zorgt voor snelle laadtijden, een krachtige GPU voor indrukwekkende grafische prestaties en ondersteuning voor r"
+    }
+  },
+  "hubPage": null
+}

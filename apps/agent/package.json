@@ -1,0 +1,29 @@
+{
+  "name": "@stamppot/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#*": "./agent/*",
+    "#evals/*": "./evals/*"
+  },
+  "scripts": {
+    "build": "eve build",
+    "deploy": "dotenvx run --strict --overload -f .env.production -- eve deploy",
+    "dev": "dotenvx run --strict --overload -f .env -- eve dev",
+    "eval": "dotenvx run --strict --overload -f .env.ci -- eve eval",
+    "start": "dotenvx run --strict --overload -f .env.production -- eve start",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@vercel/connect": "catalog:",
+    "ai": "catalog:",
+    "eve": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@dotenvx/dotenvx": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

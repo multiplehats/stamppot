@@ -1,5 +1,18 @@
+import {
+  boundedList,
+  fetchUpstreamJson,
+  globalUpstreamFetch,
+  normalizeUpstreamInstant,
+  optionalField,
+  trimUpstreamText,
+  type UpstreamCache,
+  type UpstreamFetch,
+  UpstreamStatusError,
+  UpstreamUnavailableError,
+} from "@stamppot/upstream";
 import { z } from "zod";
 import {
+  DEPARTURES_CACHE_TTL_SECONDS,
   type GetRailDisruptionsInput,
   type GetTrainDeparturesInput,
   MAX_DISRUPTIONS,
@@ -8,6 +21,8 @@ import {
   MAX_UPSTREAM_ADVICES,
   MAX_UPSTREAM_MESSAGES,
   MAX_UPSTREAM_TEXT_CHARACTERS,
+  NS_TIMEOUT_MS,
+  PLANNING_CACHE_TTL_SECONDS,
   type PlanTrainJourneyInput,
   type RailDisruption,
   railDisruptionSchema,
@@ -16,7 +31,6 @@ import {
   trainDepartureSchema,
   trainJourneySchema,
   UnknownStationError,
-  UpstreamUnavailableError,
 } from "./contracts";
 import type {
   OvCallContext,
@@ -26,20 +40,6 @@ import type {
   TrainTravelService,
 } from "./operations";
 import { NS_BASE_URL } from "./stops-format";
-import {
-  boundedList,
-  DEPARTURES_CACHE_TTL_SECONDS,
-  fetchUpstreamJson,
-  globalUpstreamFetch,
-  NS_TIMEOUT_MS,
-  normalizeUpstreamInstant,
-  optionalField,
-  PLANNING_CACHE_TTL_SECONDS,
-  trimUpstreamText,
-  type UpstreamCache,
-  type UpstreamFetch,
-  UpstreamStatusError,
-} from "./upstream";
 
 const NS_API_KEY_HEADER = "Ocp-Apim-Subscription-Key";
 /**

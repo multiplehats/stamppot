@@ -8,11 +8,11 @@
 
 Stamppot combines small domain MCPs behind one Cloudflare Worker while keeping each MCP independently connectable.
 
-The first is `mcp-groceries`, which searches the current Dutch grocery catalog, prices a basket across retailers, and keeps optional anonymous shopping lists. The second is `mcp-ov`, which plans train journeys, reads departure boards and rail disruptions, and returns real-time bus, tram and metro departures.
+The first is `mcp-groceries`, which searches the current Dutch grocery catalog, prices a basket across retailers, and keeps optional anonymous shopping lists. The second is `mcp-ov`, which plans train journeys, reads departure boards and rail disruptions, and returns real-time bus, tram and metro departures. The third is `mcp-marktplaats`, which searches second-hand listings and reads one listing's full detail.
 
 ## What is included
 
-- A combined MCP endpoint at `/mcp` and domain endpoints at `/mcp/groceries` and `/mcp/ov`
+- A combined MCP endpoint at `/mcp` and domain endpoints at `/mcp/groceries`, `/mcp/ov` and `/mcp/marktplaats`
 - Plain JSON discovery and invocation routes under `/v1`
 - A server-rendered landing page compiled with Tailwind CSS 4
 - An install picker covering eight MCP clients, on the landing page and every tool page
@@ -23,7 +23,7 @@ The first is `mcp-groceries`, which searches the current Dutch grocery catalog, 
 
 There is deliberately no authentication. The immutable operation registry is created once per Worker isolate, and most tools are pure reads over a snapshot in R2. Stateful infrastructure is added only when a tool has a real persistence requirement: saved shopping lists use a Durable Object keyed by an anonymous bearer `listKey`, which is tied to no account and no MCP session.
 
-Where a tool must reach a live upstream, the credential stays on the server. The public transport tools read the NS Reisinformatie API with a Worker secret that callers never see, bounded by short-TTL upstream caching and a per-IP rate limit; every result carries its source and says whether that source is official.
+Where a tool must reach a live upstream, the credential stays on the server. The public transport tools read the NS Reisinformatie API with a Worker secret that callers never see, bounded by short-TTL upstream caching and a per-IP rate limit; every result carries its source and says whether that source is official. Marktplaats has no public API at all, so the second-hand listings tools read the unofficial JSON endpoint the marktplaats.nl website itself uses, under its personal-use terms, with the same short-TTL caching and per-IP rate limit.
 
 The pages are React Server Components. Only the install picker ships to the browser as a client component; everything else, including the Parsew SDK that resolves its brand icons, stays on the server. Those icons are the one third-party request the site makes, and a missing one falls back to a monogram.
 
@@ -69,7 +69,7 @@ curl -H 'accept: text/markdown' http://localhost:5173/
 
 Both are generated from `apps/edge/src/landing/install-targets.ts`, so adding a client there updates the page, the Markdown and this workflow at once.
 
-For a domain-only connection, use `http://localhost:5173/mcp/groceries` or `http://localhost:5173/mcp/ov`. Each tool page carries the same picker, already pointed at its own MCP.
+For a domain-only connection, use `http://localhost:5173/mcp/groceries`, `http://localhost:5173/mcp/ov` or `http://localhost:5173/mcp/marktplaats`. Each tool page carries the same picker, already pointed at its own MCP.
 
 ## HTTP routes
 
@@ -78,6 +78,7 @@ For a domain-only connection, use `http://localhost:5173/mcp/groceries` or `http
 | `POST /mcp` | Combined MCP transport |
 | `POST /mcp/groceries` | Groceries-only MCP transport |
 | `POST /mcp/ov` | Public-transport-only MCP transport |
+| `POST /mcp/marktplaats` | Second-hand-listings-only MCP transport |
 | `GET /v1/mcps` | Discover MCPs and their operations |
 | `GET /v1/tools` | Discover all operations |
 | `POST /v1/tools/:name` | Invoke an operation with a JSON body |
@@ -90,12 +91,15 @@ The HTTP adapter and MCP adapter invoke the same validated operation definitions
 ## Workspace
 
 ```text
+apps/agent/              eve agent and evals that consume the Marktplaats MCP
 apps/edge/               Cloudflare Worker, routing and landing page
 packages/core/           Operation definition and registry
 packages/http-adapter/   Plain JSON transport
 packages/mcp-adapter/    MCP SDK transport
 packages/mcp-groceries/  Independently connectable Dutch groceries MCP
+packages/mcp-marktplaats/  Independently connectable Dutch second-hand listings MCP
 packages/mcp-ov/         Independently connectable Dutch public transport MCP
+packages/upstream/       shared outbound fetch policy: bounded, cached, GET-only
 scripts/                 MCP content validation and build compiler
 test/                    Unit and Worker-runtime integration tests
 ```
