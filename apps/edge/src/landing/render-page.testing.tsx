@@ -15,7 +15,9 @@ export function renderLandingPage(
   registry: OperationRegistry
 ): Promise<Response> {
   return Promise.resolve(
-    html(<LandingPage origin={origin} registry={registry} />)
+    // No star count in tests: this double stands in for the real renderer
+    // precisely so a page render never reaches for the network.
+    html(<LandingPage origin={origin} registry={registry} stars={undefined} />)
   );
 }
 

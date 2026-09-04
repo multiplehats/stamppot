@@ -1,9 +1,11 @@
 import type { McpDescription, OperationRegistry } from "@stamppot/core";
 import type { ReactNode } from "react";
+import { GitHubMark, StarCount } from "./github";
 import { InstallCard } from "./install-card";
 import { installOptions } from "./install-targets";
 import { McpDialogCard } from "./mcp-dialog";
 import { presentationFor } from "./mcp-presentation";
+import { brandIconUrl } from "./parsew";
 import { toolPath } from "./routes";
 import {
   buttonClass,
@@ -21,47 +23,40 @@ import { REPO_URL, SITE_NAME, SOCIAL_IMAGE_PATH } from "./urls";
 interface LandingPageProps {
   readonly origin: string;
   readonly registry: OperationRegistry;
+  /** Undefined whenever GitHub did not answer in time; the page copes. */
+  readonly stars: number | undefined;
 }
 
-/** The second reason names a real endpoint, so it cannot go stale. */
-function reasons(sampleMcpId: string) {
+/** The second step names a real endpoint, so it cannot go stale. */
+function steps(sampleMcpId: string) {
   return [
     {
-      body: "Plak de URL in je client en je kunt beginnen.",
-      title: "Geen setup",
+      body: "Geen account, geen sleutel, geen aparte testomgeving. Plak de URL in je client en roep meteen aan.",
+      title: "Plakken en beginnen",
     },
     {
-      body: `Gebruik /mcp voor alle servers tegelijk, of /mcp/${sampleMcpId} voor alleen deze.`,
-      title: "Alles samen, of per server",
+      body: `Gebruik /mcp voor alle servers tegelijk, of /mcp/${sampleMcpId} als je er maar één nodig hebt.`,
+      title: "Alles samen, of per bron",
     },
     {
-      body: "Allebei roepen ze dezelfde operatie aan, dus de schema's lopen nooit uit elkaar.",
-      title: "MCP en HTTP, uit dezelfde definitie",
+      body: "Spreekt je client geen MCP? Dezelfde operaties staan op gewone HTTP, uit dezelfde definitie, dus de schema's lopen nooit uit elkaar.",
+      title: "Ook zonder MCP-client",
     },
   ] as const;
 }
 
-const GUARANTEES = [
-  {
-    body: "Alleen het opslaan van een boodschappenlijst schrijft iets, en dat kan niet zonder het token dat jij beheert.",
-    title: "Lezen tenzij je expliciet anders vraagt",
-  },
-  {
-    body: "We tellen welke tool is aangeroepen en of hij slaagde. Wat je zocht of opvroeg gaat daar nooit in mee.",
-    title: "Je invoer wordt niet vastgelegd",
-  },
-  {
-    body: "Elke nieuwe operatie legt zijn limieten vast voordat hij live gaat.",
-    title: "Harde limieten op input, response, tijd en complexiteit",
-  },
-  {
-    body: "Ongeldige input wordt geweigerd voordat de tool draait.",
-    title: "Schemavalidatie op de edge",
-  },
-] as const;
-
+/**
+ * The one sentence pair that has to survive being quoted out of context: what
+ * Stamppot is, what it costs, and how you connect. It feeds the meta
+ * description, `og:description`, `twitter:description` and the `@graph`, and
+ * the hero paragraph and the `llms.txt` blockquote assert the same three facts
+ * in their own words.
+ */
 const DESCRIPTION =
-  "Gratis, open source MCP-servers voor Nederlandse data, zonder authenticatie. Boodschappenprijzen, tweedehands advertenties en openbaar vervoer via één endpoint.";
+  "Gratis MCP-servers voor Nederlandse supermarktprijzen, tweedehands advertenties en openbaar vervoer. Geen account en geen API-sleutel: plak het endpoint in je client.";
+
+/** One string for `<title>`, `og:title` and `twitter:title`. */
+const TITLE = "Stamppot — gratis MCP-servers voor Nederlandse data";
 
 /**
  * One `@graph` rather than three scripts, so the nodes can reference each other
@@ -116,6 +111,7 @@ function structuredData(origin: string, mcps: readonly McpDescription[]) {
         dateModified: BUILT_AT,
         description: DESCRIPTION,
         featureList: mcps.map((mcp) => mcp.title),
+        inLanguage: "nl-NL",
         isAccessibleForFree: true,
         license: `${REPO_URL}/blob/main/LICENSE`,
         name: SITE_NAME,
@@ -125,6 +121,7 @@ function structuredData(origin: string, mcps: readonly McpDescription[]) {
           priceCurrency: "EUR",
         },
         operatingSystem: "Any",
+        softwareHelp: `${origin}/developers`,
         url: `${origin}/`,
       },
       {
@@ -149,7 +146,11 @@ function structuredData(origin: string, mcps: readonly McpDescription[]) {
   };
 }
 
-export function LandingPage({ origin, registry }: LandingPageProps): ReactNode {
+export function LandingPage({
+  origin,
+  registry,
+  stars,
+}: LandingPageProps): ReactNode {
   const mcps = registry.describeMcps();
   const [firstMcp] = mcps;
   const canonicalUrl = `${origin}/`;
@@ -162,20 +163,14 @@ export function LandingPage({ origin, registry }: LandingPageProps): ReactNode {
           <link href={canonicalUrl} rel="canonical" />
           <meta content="website" property="og:type" />
           <meta content={SITE_NAME} property="og:site_name" />
-          <meta
-            content="Stamppot: MCP-servers voor Nederlandse data"
-            property="og:title"
-          />
+          <meta content={TITLE} property="og:title" />
           <meta content={DESCRIPTION} property="og:description" />
           <meta content={canonicalUrl} property="og:url" />
           <meta content="nl_NL" property="og:locale" />
           <meta content={`${origin}${SOCIAL_IMAGE_PATH}`} property="og:image" />
           <meta content="Een kom stamppot" property="og:image:alt" />
           <meta content="summary_large_image" name="twitter:card" />
-          <meta
-            content="Stamppot: MCP-servers voor Nederlandse data"
-            name="twitter:title"
-          />
+          <meta content={TITLE} name="twitter:title" />
           <meta content={DESCRIPTION} name="twitter:description" />
           <meta
             content={`${origin}${SOCIAL_IMAGE_PATH}`}
@@ -187,24 +182,28 @@ export function LandingPage({ origin, registry }: LandingPageProps): ReactNode {
           </script>
         </>
       }
-      title="Stamppot: MCP-servers voor Nederlandse data"
+      title={TITLE}
     >
-      <SiteNavigation page="landing" />
+      <SiteNavigation page="landing" stars={stars} />
       <main>
         <Hero origin={origin} />
-        <Why sampleMcpId={firstMcp?.id ?? "groceries"} />
         <Mcps mcps={mcps} origin={origin} />
-        <OpenSource />
-        <SafeByDesign />
+        <HowToConnect sampleMcpId={firstMcp?.id ?? "groceries"} />
+        <OpenSource stars={stars} />
       </main>
       <SiteFooter />
     </SiteDocument>
   );
 }
 
+/**
+ * One screen that has to do the whole job: name what this is, say what it
+ * costs, and put the next step within reach. The install card is the call to
+ * action, so there is no button row above it competing for the same click.
+ */
 function Hero({ origin }: { readonly origin: string }): ReactNode {
   return (
-    <section className="py-20 sm:py-28">
+    <section className="py-20 sm:py-24">
       <div className={`${CONTAINER} flex flex-col items-center text-center`}>
         <img
           alt="Een kom stamppot"
@@ -214,23 +213,15 @@ function Hero({ origin }: { readonly origin: string }): ReactNode {
           width={96}
         />
         <h1 className="mt-8 max-w-3xl text-balance font-semibold text-4xl tracking-tight sm:text-6xl">
-          Nederlandse MCP-servers voor je (persoonlijke) agents. Geen account
-          nodig.
+          Gratis MCP-servers voor Nederlandse data.
         </h1>
-        <p className="mt-6 max-w-xl text-balance text-lg text-muted">
-          Gratis, open source en zonder authenticatie. Koppel alle servers via
-          hetzelfde endpoint, of alleen degene die je nodig hebt.
+        <p className="mt-6 max-w-2xl text-balance text-lg text-muted">
+          Supermarktprijzen, tweedehands advertenties en openbaar vervoer,
+          achter één endpoint. Gratis en open source, zonder account of
+          API-sleutel: koppelen is de URL plakken.
         </p>
-        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-          <a className={buttonClass("primary", "lg")} href="#mcps">
-            Koppel een MCP
-          </a>
-          <a className={buttonClass("outline", "lg")} href="/v1/tools">
-            Bekijk de tools
-          </a>
-        </div>
         <InstallCard
-          className="mt-14 w-full max-w-2xl text-left"
+          className="mt-12 w-full max-w-2xl text-left"
           eyebrow="Koppel je agent"
           options={installOptions({
             endpoint: `${origin}/mcp`,
@@ -239,35 +230,13 @@ function Hero({ origin }: { readonly origin: string }): ReactNode {
           })}
           placement="landing"
         />
+        <p className="mt-6 text-muted text-sm">
+          Liever eerst kijken: <a href="#mcps">alle MCP&apos;s</a>,{" "}
+          <a href="/v1/tools">de tools met hun schema&apos;s</a> of{" "}
+          <a href="/llms.txt">llms.txt</a>.
+        </p>
       </div>
     </section>
-  );
-}
-
-function Why({ sampleMcpId }: { readonly sampleMcpId: string }): ReactNode {
-  return (
-    <Section muted>
-      <SectionHeading eyebrow="Waarom">
-        Nederlandse open data, meteen aanroepbaar.
-      </SectionHeading>
-      <ol className="mt-10 grid gap-6 sm:grid-cols-3">
-        {reasons(sampleMcpId).map((reason, index) => (
-          <li className={card.base()} key={reason.title}>
-            <div className={card.header()}>
-              <span className="font-mono text-muted text-sm">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <h3 className={`${card.title()} mt-2 text-base`}>
-                {reason.title}
-              </h3>
-            </div>
-            <div className={card.content()}>
-              <p className={card.description()}>{reason.body}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </Section>
   );
 }
 
@@ -288,21 +257,23 @@ function countWord(count: number): string {
 }
 
 /**
- * One card per registered MCP, in registry order. The title, the operations and
- * their links come from the registry; only the tagline and the accent are
- * written by hand, in `mcp-presentation.ts`, and both fall back so that a new
- * MCP still adds itself to this grid without touching either file.
+ * One card per registered MCP, in registry order, directly under the hero:
+ * this is the thing itself, and everything below it is explanation. The title,
+ * the operations and their links come from the registry; only the tagline and
+ * the accent are written by hand, in `mcp-presentation.ts`, and both fall back
+ * so that a new MCP still adds itself to this grid without touching either
+ * file.
  *
- * Three cards is what three registered MCPs happen to produce today, not a
- * layout — the grid is written for any number.
+ * The heading counts the registry rather than the layout — the grid is written
+ * for any number of cards.
  */
 function Mcps({ mcps, origin }: McpsProps): ReactNode {
   return (
-    <Section id="mcps">
+    <Section id="mcps" muted>
       <SectionHeading centered eyebrow="Nu beschikbaar">
         {mcps.length === 1
           ? "Eén bron, klaar om te koppelen."
-          : `${countWord(mcps.length)} bronnen, één endpoint.`}
+          : `${countWord(mcps.length)} bronnen achter één endpoint.`}
       </SectionHeading>
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {mcps.map((mcp) => (
@@ -334,7 +305,7 @@ function McpCard({
   readonly mcp: McpDescription;
   readonly origin: string;
 }): ReactNode {
-  const { accent, tagline } = presentationFor(mcp.id);
+  const { accent, sources, tagline } = presentationFor(mcp.id);
 
   return (
     <McpDialogCard
@@ -342,6 +313,12 @@ function McpCard({
       description={mcp.description}
       endpoint={`${origin}/mcp/${mcp.id}`}
       id={mcp.id}
+      // The light marks: every card panel is a soft tint, and so is the dialog.
+      sources={sources.map((source) => ({
+        iconUrl: brandIconUrl(source.domain, { theme: "light" }),
+        label: source.label,
+        monogram: source.label.slice(0, 1),
+      }))}
       tagline={tagline}
       title={mcp.title}
       tools={mcp.operations.map((operation) => ({
@@ -354,53 +331,65 @@ function McpCard({
   );
 }
 
-function OpenSource(): ReactNode {
+function HowToConnect({
+  sampleMcpId,
+}: {
+  readonly sampleMcpId: string;
+}): ReactNode {
+  return (
+    <Section>
+      <SectionHeading eyebrow="Koppelen">
+        Van URL naar eerste aanroep, zonder tussenstap.
+      </SectionHeading>
+      <ol className="mt-10 grid gap-6 sm:grid-cols-3">
+        {steps(sampleMcpId).map((step, index) => (
+          <li className={card.base()} key={step.title}>
+            <div className={card.header()}>
+              <span className="font-mono text-muted text-sm">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3 className={`${card.title()} mt-2 text-base`}>{step.title}</h3>
+            </div>
+            <div className={card.content()}>
+              <p className={card.description()}>{step.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-10 text-muted">
+        De volledige uitleg — endpoints, foutcodes, limieten en de bestanden die
+        agents lezen — staat op{" "}
+        <a href="/developers">de pagina voor developers</a>.
+      </p>
+    </Section>
+  );
+}
+
+function OpenSource({
+  stars,
+}: {
+  readonly stars: number | undefined;
+}): ReactNode {
   return (
     <Section muted>
       <div className="flex flex-col items-center text-center">
         <SectionHeading centered eyebrow="Open source">
-          Bekijk de code, fork de repo en draai je eigen versie.
+          Lees na wat er gebeurt, of draai je eigen versie.
         </SectionHeading>
         <p className="mt-6 max-w-xl text-balance text-muted">
-          Apache-2.0, draait op een enkele Cloudflare Worker. Elke operatie, elk
-          schema en elk contentbestand staat gewoon in de repo.
+          Volledig open-source en makkelijk zelf te deployen.
         </p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
           <a className={buttonClass("primary")} href="/developers">
             Documentatie voor developers
           </a>
-          <a className={buttonClass("outline")} href={REPO_URL}>
+          <a className={`${buttonClass("outline")} gap-2`} href={REPO_URL}>
+            <GitHubMark />
             Bekijk de code
+            <StarCount stars={stars} />
           </a>
         </div>
-        <p className="mt-6 text-muted text-sm">
-          Of ga direct naar de <a href="/openapi.json">OpenAPI-spec</a>,{" "}
-          <a href="/v1/tools">de tools met hun schema&apos;s</a> en{" "}
-          <a href="/llms.txt">llms.txt</a>.
-        </p>
       </div>
-    </Section>
-  );
-}
-
-function SafeByDesign(): ReactNode {
-  return (
-    <Section>
-      <SectionHeading eyebrow="Veilig ontworpen">
-        Je kunt Stamppot aan een agent geven zonder toe te kijken.
-      </SectionHeading>
-      <ul className="mt-10 grid gap-6 sm:grid-cols-2">
-        {GUARANTEES.map((guarantee) => (
-          <li className={card.base()} key={guarantee.title}>
-            <div className={card.header()}>
-              <h3 className={`${card.title()} text-base`}>{guarantee.title}</h3>
-            </div>
-            <div className={card.content()}>
-              <p className={card.description()}>{guarantee.body}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
     </Section>
   );
 }

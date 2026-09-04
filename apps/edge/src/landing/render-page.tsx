@@ -3,6 +3,7 @@ import { renderToReadableStream } from "@vitejs/plugin-rsc/rsc/server";
 import type { ReactNode } from "react";
 import { injectRSCPayload } from "rsc-html-stream/server";
 import type { ToolContentCatalog, ToolPageContent } from "./content";
+import { fetchGitHubStars } from "./github";
 import { LandingPage } from "./landing-page";
 import type { StaticPage } from "./pages";
 import { isRscUrl } from "./routes";
@@ -16,14 +17,17 @@ interface SsrEntry {
   ) => Promise<ReadableStream<Uint8Array>>;
 }
 
-export function renderLandingPage(
+export async function renderLandingPage(
   request: Request,
   origin: string,
   registry: OperationRegistry
 ): Promise<Response> {
-  return renderPage(
+  // Resolves to undefined rather than throwing, so a slow or unreachable
+  // GitHub costs the page a star count and nothing else.
+  const stars = await fetchGitHubStars();
+  return await renderPage(
     request,
-    <LandingPage origin={origin} registry={registry} />
+    <LandingPage origin={origin} registry={registry} stars={stars} />
   );
 }
 
