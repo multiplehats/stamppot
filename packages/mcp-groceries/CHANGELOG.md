@@ -1,5 +1,12 @@
 # @stamppot/mcp-groceries
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [2d40f1f]
+  - @stamppot/core@0.2.0
+
 ## 0.2.0
 
 ### Minor Changes
