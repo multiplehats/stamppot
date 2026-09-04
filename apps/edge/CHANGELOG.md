@@ -1,5 +1,92 @@
 # @stamppot/edge
 
+## 0.4.0
+
+### Minor Changes
+
+- 9f00227: Herbouw de landingspagina rond de MCP's en geef agents echte ingangen.
+  
+  De MCP-sectie is nu een raster van gekleurde kaarten, één per geregistreerde
+  MCP. Een kaart opent een dialoog met de volledige omschrijving en de tools van
+  die MCP; elke tool daarin linkt naar zijn eigen, indexeerbare toolpagina. De
+  accentkleuren komen uit een statische map op `mcp.id`, dus een nieuwe MCP voegt
+  zichzelf toe aan de pagina, de sitemap, `llms.txt` en de structured data.
+  
+  Nieuw voor agents en crawlers: `/llms.txt` en `/llms-full.txt`, een
+  `/developers`-pagina, prozapagina's op `/about`, `/contact` en `/privacy`, een
+  404 die vertelt waar je wel moet zijn, en een Markdown-tweeling van elke pagina
+  via `Accept: text/markdown` of een `.md`-achtervoegsel, met frontmatter en een
+  `Link`-header.
+  
+  Machineleesbaar: `/openapi.json` (gegenereerd uit dezelfde definities als de
+  tools, inclusief het foutmodel), `/pricing.md`, `/.well-known/ard.json`,
+  `/.well-known/agent-card.json`, `/.well-known/api-catalog` en een
+  `server-card.json` per MCP.
+  
+  Verder: volledige head-metadata met een JSON-LD-graaf op de homepage,
+  `Vary: Accept` op elke onderhandelde representatie, `lastmod` in de sitemap,
+  een `Sitemap:`-regel in robots.txt, en HEAD wordt afgehandeld als GET in plaats
+  van als 404.
+  
+  Twee claims op de pagina klopten niet en zijn gecorrigeerd: niet elke operatie
+  is read-only (`save_shopping_list` schrijft, achter een capability-token), en er
+  gelden wel degelijk rate limits op de bronnen die dat nodig hebben.
+- 8c9849d: Add the Dutch second-hand listings MCP at `/mcp/marktplaats` with two read-only tools: `find_marktplaats_listings` searches by query, category, location and price/condition filters, and `get_marktplaats_listing` reads one listing's full detail. Both read the unofficial JSON endpoint the marktplaats.nl website itself uses, since Marktplaats has no public read API, bounded by short-TTL caching, capped page sizes and a per-IP rate limit.
+  
+  The shared outbound-fetch policy (bounded, GET-only, cache-before-fetch) used by `mcp-ov` has been extracted into a new `@stamppot/upstream` package so other upstream-reaching MCPs share it instead of re-implementing it. `mcp-ov` now depends on `@stamppot/upstream` with no behavior change.
+- 2d40f1f: Measure the site and MCP usage with trakoo and OpenPanel, across two separate projects. The browser reports page views and install-snippet copies to the web project, the Worker reports one `mcp_tool_called` event per settled tool call — over both the MCP and the `/v1/tools` HTTP transport — to the backend project, and it reports reads of the Markdown and JSON catalog surfaces that browser JavaScript never sees.
+  
+  Each `mcp_tool_called` event also names the calling harness and its version — `claude-code` and `2.1.258`, say — read from the MCP client-info envelope that modern clients repeat on every request, falling back to the `User-Agent` for 2025-era clients and plain HTTP callers. Those labels are self-reported and never verified, so they are lowercased, stripped to a conservative charset and truncated before being recorded.
+  
+  A second event, `mcp_client_connected`, reports the handshake and discovery calls — `initialize`, `server/discover` and `tools/list` — so a harness that installs Stamppot without ever calling a tool is still counted. Chatty methods are deliberately excluded. The agent-facing page views carry the calling harness too.
+  
+  Beyond that, MCP events carry only the MCP id, the tool name, the transport, an outcome and a duration. Tool arguments, error messages, request context and user identity are all excluded by construction, as `SECURITY.md` requires, and a test asserts the exact property set that reaches OpenPanel. Every report is delivered through `waitUntil`, so no visitor or MCP client ever waits on analytics.
+  
+  Both projects stay off unless both halves of their credentials are present — the build-time client id and the Worker secret — so `pnpm dev`, CI and a contributor without decryption keys all build, test and serve the site with tracking disabled. The test Worker blanks both secrets outright, so no test run can write to a live project.
+- 8071dc7: Herschrijf de landingspagina rond wat Stamppot is, wat het kost en hoe je het koppelt.
+  
+  De homepage begint nu met één regel die de vraag beantwoordt waarmee mensen
+  zoeken — gratis MCP-servers voor Nederlandse data — gevolgd door één alinea die
+  op zichzelf te citeren is en meteen de koppelkaart. De MCP-kaarten staan direct
+  onder de hero in plaats van drie secties lager, dus je ziet binnen één scroll
+  wat er is en wat de volgende stap is.
+  
+  De "Waarom"-sectie is vervangen door "Koppelen", die in drie stappen uitlegt hoe
+  je van URL naar eerste aanroep gaat. De sectie met garanties is van de homepage
+  verdwenen; wat Stamppot wel en niet vastlegt staat op `/privacy`, en de limieten
+  en schema's staan op `/developers`, `/openapi.json` en `/v1/tools`. De
+  open-sourcesectie is ingekort, omdat de losse links naar `/v1/tools` en
+  `/llms.txt` nu onder de hero staan.
+  
+  De GitHub-knoppen dragen het GitHub-logo en tonen het aantal sterren van de
+  repository, dat een uur aan de edge gecachet wordt. Blijft GitHub stil, of staat
+  de teller op nul, dan valt alleen het getal weg.
+  
+  `/about` heeft een nieuwe sectie "Wat het kost" en noemt geen vast aantal
+  servers meer; `/developers` somt de MCP-endpoints niet meer op maar verwijst
+  naar `GET /v1/mcps`, zodat er niets verouderd wanneer er een MCP bij komt. De
+  taglines en de "wanneer gebruik je dit"-regels van elke MCP zijn aangescherpt,
+  en de titel, de omschrijving, de structured data, `/llms.txt` en de
+  `.well-known`-bestanden vertellen nu hetzelfde verhaal in dezelfde woorden.
+  
+  Elke MCP-kaart opent nu een breder dialoog waarin elke tool zijn eigen kaartje
+  heeft, twee naast elkaar, met een ingekorte omschrijving die doorlinkt naar de
+  toolpagina zelf. Boven de titel — op de kaart én bovenin het dialoog — staan de
+  merken van de bronnen achter die MCP als overlappende avatars, getekend door
+  Parsew: de twaalf supermarkten van Checkjebon, NS en OVapi, of Marktplaats.
+
+### Patch Changes
+
+- Updated dependencies [8c9849d]
+- Updated dependencies [2d40f1f]
+  - @stamppot/upstream@0.2.0
+  - @stamppot/mcp-marktplaats@0.2.0
+  - @stamppot/mcp-ov@0.2.1
+  - @stamppot/core@0.2.0
+  - @stamppot/http-adapter@0.2.0
+  - @stamppot/mcp-adapter@0.3.0
+  - @stamppot/mcp-groceries@0.2.1
+
 ## 0.3.0
 
 ### Minor Changes
