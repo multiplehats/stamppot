@@ -52,6 +52,7 @@
     "@types/node": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitejs/plugin-rsc": "catalog:",
+    "effect": "4.0.0-rc.112",
     "husky": "catalog:",
     "lint-staged": "catalog:",
     "marked": "catalog:",
