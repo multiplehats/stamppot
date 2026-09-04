@@ -38,9 +38,7 @@ export function renderMarkdown(
 
   return `# Stamppot
 
-De hele Nederlandse keuken, via hetzelfde endpoint.
-
-Kleine, betrouwbare MCP-servers voor Nederlandse data. Gratis, open source en zonder account.
+Gratis MCP-servers voor Nederlandse supermarktprijzen, tweedehands advertenties en openbaar vervoer. Geen account en geen API-sleutel: plak het endpoint in je client en begin.
 
 ## Koppelen
 
@@ -96,7 +94,7 @@ export function renderLlmsTxt(
 
   return `# Stamppot
 
-> Gratis, open source MCP-servers voor Nederlandse data. Geen account en geen API-sleutel: plak het endpoint in je client en begin. Eén adres voor boodschappenprijzen, tweedehands advertenties en openbaar vervoer. Op de bronnen die het nodig hebben geldt een rate limit, zodat de bron het aankan.
+> Stamppot is een verzameling gratis, open source MCP-servers voor Nederlandse data: supermarktprijzen, tweedehands advertenties en openbaar vervoer, achter één endpoint. Het kost niets en er is geen plan, geen account en geen API-sleutel — je koppelt door de URL in je client te plakken en meteen \`initialize\` te sturen. Op het bewaren van een boodschappenlijst na leest elke operatie alleen. Op de bronnen die het nodig hebben geldt een gedeelde rate limit, zodat de bron het aankan.
 
 ## When to use Stamppot / Wanneer je Stamppot gebruikt
 

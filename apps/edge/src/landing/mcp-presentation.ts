@@ -14,9 +14,24 @@
  * invariant that a new MCP adds itself to the page without editing this file.
  * Filling in an entry is a copy improvement, not a prerequisite.
  */
+export interface McpSource {
+  /** Registrable domain, used only to look the brand mark up through Parsew. */
+  readonly domain: string;
+  readonly label: string;
+}
+
 export interface McpPresentation {
   /** The card's coloured panel. A complete class string, never interpolated. */
   readonly accent: string;
+  /**
+   * The upstreams the data actually comes from, drawn as overlapping brand
+   * marks above the title. Written by hand rather than read from the upstream:
+   * the grocery catalog lists its retailers, but the OV and Marktplaats
+   * packages have no equivalent, and the page must render before any of them
+   * answers. The order is the drawing order, and only the first few show, so
+   * the most recognisable name goes first.
+   */
+  readonly sources: readonly McpSource[];
   /** Sits under the title on the card. One line, concrete, no caveats. */
   readonly tagline: string;
   /** `llms.txt`: the job an agent should reach for this MCP to do. */
@@ -25,6 +40,7 @@ export interface McpPresentation {
 
 const DEFAULT_PRESENTATION: McpPresentation = {
   accent: "bg-default text-foreground",
+  sources: [],
   tagline: "Nederlandse open data, meteen aanroepbaar.",
   useWhen: "Nederlandse open data ophalen zonder eigen koppeling te bouwen.",
 };
@@ -32,21 +48,42 @@ const DEFAULT_PRESENTATION: McpPresentation = {
 const PRESENTATIONS: Readonly<Record<string, McpPresentation>> = {
   groceries: {
     accent: "bg-success-soft text-success-soft-foreground",
-    tagline: "Zoek producten, reken een mandje door, bewaar een lijstje.",
+    // Every retailer Checkjebon carries, in its order of household name.
+    sources: [
+      { domain: "ah.nl", label: "Albert Heijn" },
+      { domain: "jumbo.com", label: "Jumbo" },
+      { domain: "lidl.nl", label: "Lidl" },
+      { domain: "aldi.nl", label: "ALDI" },
+      { domain: "plus.nl", label: "PLUS" },
+      { domain: "dirk.nl", label: "Dirk" },
+      { domain: "dekamarkt.nl", label: "DekaMarkt" },
+      { domain: "hoogvliet.com", label: "Hoogvliet" },
+      { domain: "spar.nl", label: "SPAR" },
+      { domain: "ekoplaza.nl", label: "Ekoplaza" },
+      { domain: "vomar.nl", label: "Vomar" },
+      { domain: "poiesz-supermarkten.nl", label: "Poiesz" },
+    ],
+    tagline:
+      "Vergelijk supermarktprijzen, reken een mandje door, bewaar een lijst.",
     useWhen:
-      "De gebruiker vraagt naar Nederlandse supermarktprijzen, wil weten wat een boodschappenmandje kost, of wil een boodschappenlijstje samenstellen of teruglezen.",
+      "De gebruiker vraagt naar Nederlandse supermarktprijzen, wil weten wat een boodschappenmandje kost of bij welke winkels het het goedkoopst uitvalt, of wil een boodschappenlijst samenstellen, bewaren en teruglezen.",
   },
   marktplaats: {
     accent: "bg-warning-soft text-warning-soft-foreground",
+    sources: [{ domain: "marktplaats.nl", label: "Marktplaats" }],
     tagline: "Zoek tweedehands advertenties en lees er één volledig uit.",
     useWhen:
-      "De gebruiker zoekt iets tweedehands in Nederland, wil weten wat een gebruikt artikel op Marktplaats kost, of wil de details van één advertentie zien. Persoonlijk gebruik, met een rate limit.",
+      "De gebruiker zoekt iets tweedehands in Nederland, wil weten wat een gebruikt artikel op Marktplaats kost, of wil de details van één advertentie zien. Onofficiële bron: kleine aantallen, met een rate limit, bedoeld voor persoonlijk gebruik.",
   },
   ov: {
     accent: "bg-accent-soft text-accent-soft-foreground",
+    sources: [
+      { domain: "ns.nl", label: "NS" },
+      { domain: "ovapi.nl", label: "OVapi" },
+    ],
     tagline: "Plan een treinreis, lees een vertrekbord, volg storingen.",
     useWhen:
-      "De gebruiker vraagt naar Nederlands openbaar vervoer: hoe laat de trein gaat, of er storingen zijn, of wanneer de volgende bus, tram of metro vertrekt. Begin met find_ov_stop om een naam naar een code te vertalen.",
+      "De gebruiker vraagt naar Nederlands openbaar vervoer: hoe laat de trein gaat, of er storingen op het spoor zijn, of wanneer de volgende bus, tram of metro vertrekt. Begin met find_ov_stop om een plaats- of haltenaam naar een code te vertalen.",
   },
 };
 

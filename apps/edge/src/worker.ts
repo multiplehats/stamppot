@@ -513,7 +513,7 @@ async function handleRequest(
           {
             canonical: `${origin}/`,
             description:
-              "Gratis, open source MCP-servers voor Nederlandse data, zonder authenticatie.",
+              "Gratis MCP-servers voor Nederlandse supermarktprijzen, tweedehands advertenties en openbaar vervoer. Geen account en geen API-sleutel.",
             title: "Stamppot",
           },
           renderMarkdown(origin, registry)

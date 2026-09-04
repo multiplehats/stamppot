@@ -1,5 +1,6 @@
 import { buttonVariants, cardVariants } from "@heroui/styles";
 import type { ReactNode } from "react";
+import { GitHubMark, StarCount } from "./github";
 import { STATIC_PAGES } from "./pages";
 import { StyleAssets } from "./style-assets";
 import { REPO_URL } from "./urls";
@@ -123,8 +124,11 @@ const NAV_LINKS = {
 
 export function SiteNavigation({
   page,
+  stars,
 }: {
   readonly page: "landing" | "tool";
+  /** The repository's star count, when the page bothered to look it up. */
+  readonly stars?: number | undefined;
 }): ReactNode {
   return (
     <nav
@@ -148,8 +152,13 @@ export function SiteNavigation({
               {link.label}
             </a>
           ))}
-          <a className={buttonClass("secondary", "sm")} href={REPO_URL}>
+          <a
+            className={`${buttonClass("secondary", "sm")} gap-2`}
+            href={REPO_URL}
+          >
+            <GitHubMark />
             GitHub
+            <StarCount stars={stars} />
           </a>
         </div>
       </div>

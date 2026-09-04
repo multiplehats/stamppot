@@ -53,7 +53,7 @@ export function renderArdCatalog(
 ): unknown {
   return {
     description:
-      "Gratis, open source MCP-servers voor Nederlandse data: boodschappenprijzen, tweedehands advertenties en openbaar vervoer. Geen account en geen API-sleutel.",
+      "Gratis, open source MCP-servers voor Nederlandse data: supermarktprijzen, tweedehands advertenties en openbaar vervoer. Geen account, geen API-sleutel, geen betaald plan.",
     documentation: `${origin}/llms.txt`,
     entries: [
       {
@@ -114,7 +114,7 @@ export function renderMcpServerCard(
     capabilities: { tools: { listChanged: false } },
     description:
       mcp?.description ??
-      "Kleine, betrouwbare MCP-servers voor Nederlandse open data. Read-only op het opslaan van een boodschappenlijst na, geen account nodig.",
+      "Kleine, betrouwbare MCP-servers voor Nederlandse open data: supermarktprijzen, tweedehands advertenties en openbaar vervoer. Alleen lezen op het opslaan van een boodschappenlijst na, en gratis zonder account of API-sleutel.",
     documentation: `${origin}/llms.txt`,
     license: "Apache-2.0",
     name: mcp === undefined ? "stamppot" : `stamppot-${mcp.id}`,
@@ -145,7 +145,7 @@ export function renderAgentCard(
     defaultInputModes: ["application/json"],
     defaultOutputModes: ["application/json"],
     description:
-      "Beantwoordt vragen over Nederlandse boodschappenprijzen, tweedehands advertenties op Marktplaats en Nederlands openbaar vervoer. Alleen lezen, geen account.",
+      "Beantwoordt vragen over Nederlandse supermarktprijzen, tweedehands advertenties op Marktplaats en Nederlands openbaar vervoer met actuele data uit publieke bronnen. Alleen lezen, gratis, geen account.",
     documentationUrl: `${origin}/llms.txt`,
     iconUrl: `${origin}${SOCIAL_IMAGE_PATH}`,
     name: SITE_NAME,

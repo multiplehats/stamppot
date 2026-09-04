@@ -25,9 +25,9 @@ export interface StaticPage {
 export const STATIC_PAGES: readonly StaticPage[] = [
   {
     description:
-      "Elk adres dat je nodig hebt om Stamppot aan te roepen: MCP-endpoints, de HTTP API, de OpenAPI-spec en de bestanden die agents lezen.",
+      "Elk adres dat je nodig hebt om Stamppot aan te roepen: MCP-endpoints, de HTTP API, de OpenAPI-spec en de bestanden die agents lezen. Gratis, zonder registratie.",
     intro:
-      "Geen sleutel, geen aanmelding, geen sandbox nodig: de productie-endpoints zijn openbaar en alleen-lezen, dus je eerste aanroep kan meteen.",
+      "Geen sleutel, geen aanmelding, geen sandbox nodig. De productie-endpoints zijn openbaar en alleen-lezen, dus je eerste aanroep kan meteen.",
     navLabel: "Developers",
     path: "/developers",
     sections: [
@@ -40,7 +40,7 @@ export const STATIC_PAGES: readonly StaticPage[] = [
       },
       {
         body: [
-          "MCP over streamable HTTP. Gebruik /mcp voor alle servers tegelijk, of /mcp/<id> voor er één: /mcp/groceries, /mcp/marktplaats of /mcp/ov. Er is geen authenticatie, dus je stuurt meteen initialize.",
+          "MCP over streamable HTTP. Gebruik /mcp voor alle servers tegelijk, of /mcp/<id> voor er één. Welke id's er zijn staat in GET /v1/mcps en op de homepage. Er is geen authenticatie, dus je stuurt meteen initialize.",
           "Geen MCP-client? Dezelfde operaties staan op gewone HTTP. GET /v1/mcps geeft de servers, GET /v1/tools geeft elke tool met zijn JSON Schema, en POST /v1/tools/<naam> roept er één aan met de argumenten als JSON body.",
         ],
         heading: "Endpoints",
@@ -73,13 +73,13 @@ export const STATIC_PAGES: readonly StaticPage[] = [
     description:
       "Wat Stamppot is, wie het bouwt en waarom het gratis en zonder account draait.",
     intro:
-      "Stamppot is een verzameling kleine MCP-servers voor Nederlandse data. Eén endpoint, geen account, open source.",
+      "Stamppot is een verzameling kleine, gratis MCP-servers voor Nederlandse data: supermarktprijzen, tweedehands advertenties en openbaar vervoer. Eén endpoint, geen account, open source onder Apache-2.0.",
     navLabel: "Over",
     path: "/about",
     sections: [
       {
         body: [
-          "Stamppot bundelt Nederlandse open data achter het Model Context Protocol, zodat een agent er direct bij kan zonder dat je eerst zelf een koppeling bouwt. Vandaag zitten er drie servers in: boodschappen, Marktplaats en openbaar vervoer. Je koppelt ze los aan, of alle drie tegelijk via één endpoint.",
+          "Stamppot bundelt Nederlandse open data achter het Model Context Protocol, zodat een agent er direct bij kan zonder dat je eerst zelf een koppeling bouwt. Er zijn servers voor supermarktprijzen, voor tweedehands advertenties op Marktplaats en voor openbaar vervoer. Je koppelt ze los aan, of allemaal tegelijk via één endpoint; de homepage toont welke er vandaag in zitten.",
           "Het idee is smal gehouden. Stamppot verzint geen data en zet er geen model tussen: elke tool haalt op wat de bron zegt, normaliseert het naar een vast schema en geeft het terug. Wat er niet in zit, staat er ook niet in — er is geen verrijking, geen scoring en geen gok.",
         ],
         heading: "Wat het is",
@@ -97,6 +97,13 @@ export const STATIC_PAGES: readonly StaticPage[] = [
           "Elk antwoord is een momentopname uit een kortstondige cache. Prijzen zijn indicatief, voorraad is niet gegarandeerd en een reisadvies is geen reservering of vervoerbewijs.",
         ],
         heading: "Waar de data vandaan komt",
+      },
+      {
+        body: [
+          "Stamppot is gratis. Er is één plan, dat kost niets, en er is geen betaalde variant die je later nodig hebt: geen account, geen API-sleutel, geen limiet per gebruiker. Op de bronnen die het nodig hebben geldt een gedeelde rate limit, zodat de bron het aankan.",
+          "Wat het kost staat ook machineleesbaar op /pricing.md, zodat een agent het kan nakijken zonder deze pagina te lezen.",
+        ],
+        heading: "Wat het kost",
       },
       {
         body: [
