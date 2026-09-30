@@ -11,8 +11,7 @@ import { ParsewBrands } from "@parsew/sdk/client";
  * install option falls back to the monogram chip drawn by `InstallCard`. That
  * is the deliberate default, because `new ParsewBrands({ token: "" })` throws.
  */
-export const PARSEW_PUBLISHABLE_KEY =
-  "pk_boSOdIVboBZPacHdexwwNiTOiZKGsjWoQEyGeXLVKWqCgKomliJcxkkJiVYZFYqF";
+export const PARSEW_PUBLISHABLE_KEY = "pk_6vvc5xfUtDM4";
 
 /** Matches the 64px icon slot in `InstallCard`, doubled for retina screens. */
 const ICON_SIZE = 64;
