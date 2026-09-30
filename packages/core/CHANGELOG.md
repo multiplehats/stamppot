@@ -1,6 +1,6 @@
-# @stamppot/mcp-adapter
+# @stamppot/core
 
-## 0.3.0
+## 0.2.0
 
 ### Minor Changes
 
@@ -13,14 +13,3 @@
   Beyond that, MCP events carry only the MCP id, the tool name, the transport, an outcome and a duration. Tool arguments, error messages, request context and user identity are all excluded by construction, as `SECURITY.md` requires, and a test asserts the exact property set that reaches OpenPanel. Every report is delivered through `waitUntil`, so no visitor or MCP client ever waits on analytics.
   
   Both projects stay off unless both halves of their credentials are present — the build-time client id and the Worker secret — so `pnpm dev`, CI and a contributor without decryption keys all build, test and serve the site with tracking disabled. The test Worker blanks both secrets outright, so no test run can write to a live project.
-
-### Patch Changes
-
-- Updated dependencies [2d40f1f]
-  - @stamppot/core@0.2.0
-
-## 0.2.0
-
-### Minor Changes
-
-- 91ef54b: Add current Dutch grocery search and basket planning, plus capability-held saved shopping lists backed by private Cloudflare storage. Harden MCP ingress with stateless legacy compatibility, request validation, a 64 KiB body limit, and generic tool failures.
