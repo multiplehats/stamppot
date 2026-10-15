@@ -22,6 +22,7 @@
     "fix": "ultracite fix",
     "groceries:sync": "tsx scripts/groceries-catalog.ts",
     "ov:sync": "tsx scripts/ov-stops.ts",
+    "ov:sync:production": "dotenvx run --strict --overload -f apps/edge/.env.production -- pnpm ov:sync --remote --bucket stamppot-ov-stops --jurisdiction eu",
     "prepare": "husky",
     "preview": "pnpm build && vite preview",
     "test": "vitest run",

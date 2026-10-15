@@ -121,3 +121,8 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: d61f96f2a058dbe3857d567eb1779c94
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
+      - name: Confirm the OV stop directory answers
+        # The deploy never writes the stops bucket, so an empty one only shows up as
+        # `directory_unavailable` at request time. Fail here instead. The fix is the
+        # "OV stops sync" workflow, not a redeploy.
+        run: node scripts/check-ov-directory.mjs

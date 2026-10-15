@@ -1,0 +1,41 @@
+name: OV stops sync
+
+# Publishes the NS + OVapi stop directory that `find_ov_stop` reads from the
+# `stamppot-ov-stops` R2 bucket. Deploying the Worker never writes that bucket, so
+# without this job the directory is empty on a fresh account and ages forever after.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly, Monday 04:17 UTC. Stop codes change slowly; off the hour to avoid the
+    # scheduler's top-of-hour backlog.
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stamppot-ov-stops-sync
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Publish the stops snapshot
+        # ov:sync:production decrypts apps/edge/.env.production for NS_API_KEY. The
+        # sync validates everything and replaces stops/manifest.json last, so a failed
+        # run leaves the previous snapshot live.
+        run: pnpm run ov:sync:production
+        env:
+          CLOUDFLARE_ACCOUNT_ID: d61f96f2a058dbe3857d567eb1779c94
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
+      - name: Confirm the deployed directory answers
+        run: node scripts/check-ov-directory.mjs

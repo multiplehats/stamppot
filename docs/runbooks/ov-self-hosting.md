@@ -143,7 +143,9 @@ NS_API_KEY=your-subscription-key pnpm ov:sync \
   --remote --bucket my-stamppot-ov-stops --jurisdiction eu
 ```
 
-The repository installs no scheduled trigger, so this runs from an operator's own scheduler or CI job. Each successful sync retains the prior immutable snapshot and only advances the manifest pointer; this release configures no R2 lifecycle rule, so monitor storage growth if syncing often.
+The hosted stamppot.dev deployment does this weekly in [`.github/workflows/ov-stops-sync.yml`](../../.github/workflows/ov-stops-sync.yml), which runs `pnpm ov:sync:production` and then `node scripts/check-ov-directory.mjs` to confirm the live Worker answers. The `ov:sync:production` script is hard-wired to the `stamppot-ov-stops` bucket and the repository's encrypted `apps/edge/.env.production`, so a self-hosted deployment copies the workflow with its own bucket name and its own way of supplying `NS_API_KEY`. Pass your Worker's origin to the check: `node scripts/check-ov-directory.mjs https://your-worker.example`.
+
+Deploying the Worker never writes the bucket. A fresh deployment answers `directory_unavailable` until the first sync, however healthy the rest of the domain looks. Each successful sync retains the prior immutable snapshot and only advances the manifest pointer; this release configures no R2 lifecycle rule, so monitor storage growth if syncing often.
 
 ## Upstream obligations
 
