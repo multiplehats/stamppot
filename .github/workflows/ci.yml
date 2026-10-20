@@ -126,3 +126,8 @@ jobs:
         # `directory_unavailable` at request time. Fail here instead. The fix is the
         # "OV stops sync" workflow, not a redeploy.
         run: node scripts/check-ov-directory.mjs
+      - name: Confirm the grocery catalog is fresh
+        # Same gap for the grocery catalog: a deploy never refreshes it, and an old one
+        # keeps answering with `freshness: "stale"`. The fix is the "Groceries catalog
+        # sync" workflow, not a redeploy.
+        run: node scripts/check-groceries-catalog.mjs

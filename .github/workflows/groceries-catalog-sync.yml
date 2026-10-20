@@ -1,0 +1,45 @@
+name: Groceries catalog sync
+
+# Publishes the Checkjebon price snapshot that the grocery tools read from the
+# `stamppot-groceries-catalog` R2 bucket. Deploying the Worker never writes that
+# bucket, so without this job prices freeze on the day of the last manual sync.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily, 05:47 UTC. The Worker reports a catalog older than 48 hours as stale, so
+    # one missed run is still covered. Checkjebon republishes its data around 04:30
+    # UTC; off the hour to avoid the scheduler's top-of-hour backlog.
+    - cron: "47 5 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stamppot-groceries-catalog-sync
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Publish the catalog snapshot
+        id: publish
+        # The sync validates everything and replaces catalog/manifest.json last, so a
+        # failed run leaves the previous snapshot live. It prints `version=<id> …`.
+        run: |
+          pnpm --silent run groceries:sync:production | tee sync.log
+          version=$(sed -n 's/^version=\([^ ]*\).*/\1/p' sync.log)
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: d61f96f2a058dbe3857d567eb1779c94
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Confirm the deployed Worker serves the new snapshot
+        run: node scripts/check-groceries-catalog.mjs --expect-version "${{ steps.publish.outputs.version }}"
