@@ -93,9 +93,11 @@ https://your-worker.example/mcp/groceries
 
 ## Refresh and retain catalog data
 
-Run the same remote sync command whenever prices should be refreshed. The repository does not install a scheduled trigger, so production operators must invoke it manually or from their own scheduler or CI job.
+Run the same remote sync command whenever prices should be refreshed. The Worker reports a catalog older than 48 hours as `freshness: "stale"` and keeps serving it, so a deployment that never re-syncs keeps answering with the prices from its first publication.
 
-Each successful sync retains the prior immutable catalog version and only advances the manifest pointer. This release does not delete old versions or configure an R2 lifecycle rule; monitor storage growth and establish a separate retention policy if needed.
+The hosted stamppot.dev deployment syncs daily in [`.github/workflows/groceries-catalog-sync.yml`](../../.github/workflows/groceries-catalog-sync.yml), which runs `pnpm groceries:sync:production` and then `node scripts/check-groceries-catalog.mjs --expect-version <version>` to confirm the live Worker serves the snapshot it just published. The `groceries:sync:production` script is hard-wired to the `stamppot-groceries-catalog` bucket, so a self-hosted deployment copies the workflow with its own bucket name. Pass your Worker's origin to the check: `node scripts/check-groceries-catalog.mjs https://your-worker.example`. The check fails on a stale catalog as well as a missing one.
+
+Each successful sync retains the prior immutable catalog version and only advances the manifest pointer. Every run writes a full new version, even when Checkjebon has not changed, because the version is keyed on the time of the fetch. This release does not delete old versions or configure an R2 lifecycle rule; at a daily cadence monitor storage growth and establish a separate retention policy.
 
 ## Operational notes
 
