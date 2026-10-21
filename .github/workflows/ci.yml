@@ -87,7 +87,9 @@ jobs:
           push-git-tags: false
           version-script: pnpm version-packages
       - name: Run CI for the release pull request
-        if: steps.changesets.outputs.has-changesets == 'true'
+        # Empty changesets count as changesets but open no release pull request, so
+        # `pr-number` is blank and the lookup below would 404.
+        if: steps.changesets.outputs.has-changesets == 'true' && steps.changesets.outputs.pr-number != ''
         env:
           GH_TOKEN: ${{ github.token }}
           PULL_REQUEST_NUMBER: ${{ steps.changesets.outputs.pr-number }}
