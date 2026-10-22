@@ -11,6 +11,5 @@ declare module "virtual:stamppot-mcp-content" {
  * contributor's `pnpm dev`, or CI) they stay `undefined` and analytics is off.
  */
 interface ImportMetaEnv {
-  readonly VITE_OPENPANEL_BACKEND_CLIENT_ID?: string;
   readonly VITE_OPENPANEL_CLIENT_ID?: string;
 }
