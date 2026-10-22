@@ -8,9 +8,9 @@ import { defineEvents, typed } from "trakoo";
  * `trakoo/server` or an OpenPanel SDK, so a server component and the browser
  * bundle can both reach it without dragging the other environment along.
  *
- * The instances that consume it are split by destination, not by event:
- * `client.ts` and the web half of `server.ts` report to the web OpenPanel
- * project, the MCP half of `server.ts` to the backend one.
+ * `client.ts` and `server.ts` both report to the site's OpenPanel project.
+ * There is no event for an MCP handshake or `tools/list`: registries and
+ * scanners poll those around the clock, so only a tool call counts as use.
  */
 export const stamppotEvents = defineEvents({
   installSnippetCopied: {
@@ -22,19 +22,6 @@ export const stamppotEvents = defineEvents({
       /** The install target's id, e.g. "claude-code". Never free text. */
       client: string;
       placement: "landing" | "tool";
-    }>(),
-  },
-  mcpClientConnected: {
-    category: "mcp",
-    name: "mcp_client_connected",
-    // A harness reaching the endpoint without calling a tool. Separates
-    // "installed us" from "uses us"; without it the former is invisible.
-    properties: typed<{
-      client: string;
-      clientVersion: string;
-      mcp: string;
-      /** A closed set of JSON-RPC methods, never free text. */
-      method: string;
     }>(),
   },
   mcpToolCalled: {

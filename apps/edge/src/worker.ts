@@ -55,7 +55,6 @@ const toolCatalog = toolContent(registry);
 const analytics = createEdgeAnalytics(() => bindings);
 
 const combinedMcpHandler = createRegistryMcpHandler(registry, {
-  onDiscovery: analytics.reportDiscovery,
   onToolCall: analytics.reportToolCall,
   route: "/mcp",
   serverName: "stamppot",
@@ -64,7 +63,6 @@ const combinedMcpHandler = createRegistryMcpHandler(registry, {
 
 const groceriesMcpHandler = createRegistryMcpHandler(registry, {
   mcp: groceriesMcp,
-  onDiscovery: analytics.reportDiscovery,
   onToolCall: analytics.reportToolCall,
   route: "/mcp/groceries",
   serverName: "stamppot-groceries",
@@ -73,7 +71,6 @@ const groceriesMcpHandler = createRegistryMcpHandler(registry, {
 
 const marktplaatsMcpHandler = createRegistryMcpHandler(registry, {
   mcp: marktplaatsMcp,
-  onDiscovery: analytics.reportDiscovery,
   onToolCall: analytics.reportToolCall,
   route: "/mcp/marktplaats",
   serverName: "stamppot-marktplaats",
@@ -82,7 +79,6 @@ const marktplaatsMcpHandler = createRegistryMcpHandler(registry, {
 
 const ovMcpHandler = createRegistryMcpHandler(registry, {
   mcp: ovMcp,
-  onDiscovery: analytics.reportDiscovery,
   onToolCall: analytics.reportToolCall,
   route: "/mcp/ov",
   serverName: "stamppot-ov",

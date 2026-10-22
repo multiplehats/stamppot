@@ -23,7 +23,6 @@ export default defineConfig(async () => ({
         bindings: {
           NS_API_KEY: "test-ns-key",
           OPENPANEL_API_KEY: "",
-          OPENPANEL_BACKEND_API_KEY: "",
         },
       },
       wrangler: { configPath: "./apps/edge/wrangler.jsonc" },

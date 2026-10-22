@@ -573,7 +573,6 @@ describe("credential gating", () => {
     // decrypted .dev.vars. Without it a `pnpm check:ci` run — which does put a
     // real client id on the environment — would emit events to a live project.
     expect(env.OPENPANEL_API_KEY).toBe("");
-    expect(env.OPENPANEL_BACKEND_API_KEY).toBe("");
   });
 
   it("is on only when both halves of a project's credentials are set", () => {

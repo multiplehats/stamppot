@@ -1,6 +1,5 @@
 import type {
   ClientIdentity,
-  McpDiscoveryReporter,
   ToolCallRecord,
   ToolCallReporter,
 } from "@stamppot/core";
@@ -9,7 +8,7 @@ import { createServerAnalytics } from "trakoo/server";
 import { stamppotEvents } from "./events";
 
 /**
- * The two OpenPanel client secrets. Declared here rather than trusted to
+ * The OpenPanel client secret. Declared here rather than trusted to
  * `CloudflareBindings`, which `wrangler types` regenerates from whatever
  * `.dev.vars` happened to hold — a contributor without decryption keys would
  * otherwise break typecheck. Optional for the same reason: absent keys must
@@ -17,7 +16,6 @@ import { stamppotEvents } from "./events";
  */
 interface AnalyticsSecretBindings {
   readonly OPENPANEL_API_KEY?: string;
-  readonly OPENPANEL_BACKEND_API_KEY?: string;
 }
 
 type ServerAnalytics = ReturnType<typeof createProjectAnalytics>;
@@ -37,9 +35,11 @@ export interface EdgeAnalytics {
     identity: ClientIdentity,
     context: ExecutionContext
   ) => void;
-  /** A handshake or discovery call, reported to the backend project. */
-  readonly reportDiscovery: McpDiscoveryReporter;
-  /** One settled tool call, reported to the backend project. */
+  /**
+   * One settled tool call. Handshakes and discovery calls are deliberately
+   * not reported: registries and scanners poll `initialize` and `tools/list`
+   * around the clock, which drowned the real usage and the event allowance.
+   */
   readonly reportToolCall: ToolCallReporter;
 }
 
@@ -116,47 +116,38 @@ function deliver(context: ExecutionContext, send: () => Promise<void>): void {
 }
 
 /**
- * The Worker's analytics, bound to two separate OpenPanel projects: the web
- * project for the site, the backend project for MCP usage.
+ * The Worker's analytics, bound to the site's OpenPanel project: agent page
+ * views and MCP tool calls land beside the browser page views, so the whole
+ * audience and its usage are in one place.
  *
- * Both instances are built on first use and then kept. They are never shut
- * down, and nothing is lost by that: trakoo's `shutdown()` clears identity
- * rather than flushing, and the OpenPanel SDK only buffers when `disabled` or
+ * The instance is built on first use and then kept. It is never shut down,
+ * and nothing is lost by that: trakoo's `shutdown()` clears identity rather
+ * than flushing, and the OpenPanel SDK only buffers when `disabled` or
  * `waitForProfile` is set — neither of which applies here — so every `track()`
  * is its own POST, already held open by `waitUntil`.
  *
- * Neither instance ever calls `identify()` or passes a user: Stamppot is
- * authless, and an anonymous MCP has no profile to attach.
+ * It never calls `identify()` or passes a user: Stamppot is authless, and an
+ * anonymous MCP has no profile to attach.
  */
 export function createEdgeAnalytics(
   getBindings: () => CloudflareBindings
 ): EdgeAnalytics {
-  let mcpProject: ServerAnalytics | undefined;
-  let webProject: ServerAnalytics | undefined;
+  let project: ServerAnalytics | undefined;
 
-  const secrets = () =>
-    getBindings() as CloudflareBindings & AnalyticsSecretBindings;
-
-  const mcpAnalytics = (): ServerAnalytics => {
-    mcpProject ??= createProjectAnalytics(
-      import.meta.env.VITE_OPENPANEL_BACKEND_CLIENT_ID,
-      secrets().OPENPANEL_BACKEND_API_KEY
-    );
-    return mcpProject;
-  };
-
-  const webAnalytics = (): ServerAnalytics => {
-    webProject ??= createProjectAnalytics(
+  const analytics = (): ServerAnalytics => {
+    const secrets = getBindings() as CloudflareBindings &
+      AnalyticsSecretBindings;
+    project ??= createProjectAnalytics(
       import.meta.env.VITE_OPENPANEL_CLIENT_ID,
-      secrets().OPENPANEL_API_KEY
+      secrets.OPENPANEL_API_KEY
     );
-    return webProject;
+    return project;
   };
 
   return {
     reportAgentPageView(path, surface, identity, context) {
       deliver(context, () =>
-        webAnalytics().pageView(
+        analytics().pageView(
           {
             client: identity.client,
             clientVersion: identity.clientVersion,
@@ -166,22 +157,12 @@ export function createEdgeAnalytics(
         )
       );
     },
-    reportDiscovery(record, context) {
-      deliver(context, () =>
-        mcpAnalytics().track("mcp_client_connected", {
-          client: record.client,
-          clientVersion: record.clientVersion,
-          mcp: record.mcp,
-          method: record.method,
-        })
-      );
-    },
     reportToolCall(record: ToolCallRecord, context) {
       // Spread into a fresh object: `track()` receives exactly the five fields
       // the registry declares, and nothing a future caller bolts onto the
       // record can ride along unnoticed.
       deliver(context, () =>
-        mcpAnalytics().track("mcp_tool_called", {
+        analytics().track("mcp_tool_called", {
           client: record.client,
           clientVersion: record.clientVersion,
           durationMs: record.durationMs,
